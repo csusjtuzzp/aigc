@@ -43,7 +43,6 @@
 
 
 
-
 #### 2.3.1 BitFit
 
 	只调节神经网络的bias参数
@@ -253,7 +252,7 @@ if peft_config.peft_type == PeftType.PREFIX_TUNING:
 
 #### 2.3.5 Lora
 
-论文：
+  论文：
 
 	LORA: LOW-RANK ADAPTATION OF LARGE LANGUAGE MODELS
 	https://arxiv.org/pdf/2106.09685.pdf
@@ -273,7 +272,8 @@ if peft_config.peft_type == PeftType.PREFIX_TUNING:
 ![lora](./pic/3/lora.jpg "lora")
 
 - adalora：
-   $h=W_0 x + \Delta W * x  = W_0 x + P\Lambda Q x$
+
+   - $h=W_0 x + \Delta W * x  = W_0 x + P\Lambda Q x$
 
    - 训练过程：
    ![adalora-0](./pic/3/adalora-0.jpg "adalora-0")
@@ -291,7 +291,6 @@ if peft_config.peft_type == PeftType.PREFIX_TUNING:
 
 ```
 from peft import LoraConfig, TaskType, get_peft_model
-
 config = LoraConfig(task_type=TaskType.CAUSAL_LM, target_modules=[".*\.1.*query_key_value"], modules_to_save=["word_embeddings"])
 
 ```
@@ -299,11 +298,8 @@ config = LoraConfig(task_type=TaskType.CAUSAL_LM, target_modules=[".*\.1.*query_
 
 #### 2.3.6 IA3
 
-
 	Few-Shot Parameter-Efficient Fine-Tuning is Better and Cheaper than In-Context Learning
 	https://arxiv.org/pdf/2205.05638.pdf
-
-
 
 
 
@@ -313,6 +309,83 @@ config = LoraConfig(task_type=TaskType.CAUSAL_LM, target_modules=[".*\.1.*query_
 
 	Parameter-Efficient Transfer Learning for NLP
 	https://arxiv.org/pdf/1902.00751.pdf
+    AdapterFusion:Non-Destructive Task Composition for Transfer Learning
+    https://arxiv.org/pdf/2005.00247.pdf
+    MAD-X: An Adapter-Based Framework for Multi-Task Cross-Lingual Transfer
+
+原理：
+
+
+
+- adapter：
+![adapter](./pic/3/adapter.jpg "adapter")
+```
+  def feedforward_adapter(input_tensor, hidden_size=64, init_scale=1e-3):
+    """A feedforward adapter layer with a bottleneck.
+
+    Implements a bottleneck layer with a user-specified nonlinearity and an
+    identity residual connection. All variables created are added to the
+    "adapters" collection.
+
+    Args:
+        input_tensor: input Tensor of shape [batch size, hidden dimension]
+        hidden_size: dimension of the bottleneck layer.
+        init_scale: Scale of the initialization distribution used for weights.
+
+    Returns:
+        Tensor of the same shape as x.
+    """
+    with tf.variable_scope("adapters"):
+        in_size = input_tensor.get_shape().as_list()[1]
+        w1 = tf.get_variable(
+            "weights1", [in_size, hidden_size],
+            initializer=tf.truncated_normal_initializer(stddev=init_scale),
+            collections=["adapters", tf.GraphKeys.GLOBAL_VARIABLES])
+        b1 = tf.get_variable(
+            "biases1", [1, hidden_size],
+            initializer=tf.zeros_initializer(),
+            collections=["adapters", tf.GraphKeys.GLOBAL_VARIABLES])
+        net = tf.tensordot(input_tensor, w1, [[1], [0]]) + b1
+
+        net = gelu(net)
+
+        w2 = tf.get_variable(
+            "weights2", [hidden_size, in_size],
+            initializer=tf.truncated_normal_initializer(stddev=init_scale),
+            collections=["adapters", tf.GraphKeys.GLOBAL_VARIABLES])
+        b2 = tf.get_variable(
+            "biases2", [1, in_size],
+            initializer=tf.zeros_initializer(),
+            collections=["adapters", tf.GraphKeys.GLOBAL_VARIABLES])
+        net = tf.tensordot(net, w2, [[1], [0]]) + b2
+
+    return net + input_tensor
+
+```
+- adapterFusion
+![adapterfusion](./pic/3/adapterfusion.jpg "adapterfusion")
+![adapterfusion-2](./pic/3/adapterfusion-2.jpg "adapterfusion-2")
+    - knowledge extraction stage
+  ![adapterfusion-sta](./pic/3/adapterfusion-sta.jpg "adapterfusion-sta")
+  ![adapterfusion-mta](./pic/3/adapterfusion-mta.jpg "adapterfusion-mta")
+    - knowledge composition step
+  ![adapterfusion-stage2](./pic/3/adapterfusion-stage2.jpg "adapterfusion-stage2")
+  ![adapterfusion-stage2-2](./pic/3/adapterfusion-stage2-2.jpg "adapterfusion-satge2-2")
+
+    ```
+    model = BertModelWithHeads.from_pretrained("bert-base-uncased")
+    model.load_adapter("nli/multinli@ukp", load_as="multinli", with_head=False)
+    model.load_adapter("sts/qqp@ukp", with_head=False)
+    model.load_adapter("nli/qnli@ukp", with_head=False)
+    model.add_classification_head("cb")
+
+    adapter_setup = Fuse("multinli", "qqp", "qnli")
+    model.add_fusion(adapter_setup)
+    model.set_active_adapters(adapter_setup)
+    model.train_fusion(adapter_setup)
+    ```
+  
+- MAD-X
 
 
 
