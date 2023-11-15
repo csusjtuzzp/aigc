@@ -1,11 +1,6 @@
 ## 1 目录
 
-
-
 [TOC]
-
-
-
 
 
 ## 2 大模型基础
@@ -16,10 +11,112 @@
 
 
 
-### 2.2 预训练
+### 2.2 预训练模型
 
-(Generative Pre-Training), 由多层Transformer 组成的单向语言模型，主要分为输入层，编码层和输出层三部分。
+#### 2.2.1 文本分词
 
+- 分词类性：
+  - word 分词， OOV 问题
+  - character分词，过长，失去了单词的联系
+  - Subword：
+  
+    "unfortunately" = "un" + "for" + "tun" + "ate" + "ly"  
+    
+    常用算法：BPE，SentencePiece，WordPiece等
+  
+- BPE：
+  
+  Byte-Pair Encoding。先拆分为character, 然后统计token pair频率，合并， GPT
+- WordPiece：
+  
+  与BPE 很相近，过程类似，但是会考虑单个token的频率，如果单个token的频率很高，也不会合并。如un-able， un 和 able 概率都很高，即使un-able pair很高，也不会合并
+
+- Unigram：
+  
+  从一个巨大的词汇表出发，再逐渐删除trimdown其中的词汇，直到size满足预定义。初始的词汇表可以采用所有预分词器分出来的词，再加上所有高频的子串。每次从词汇表中删除词汇的原则是使预定义的损失最小。
+
+  训练文档所有词为$x_1, x_2, ..., X_n$, 每个词token的方法是一个集合$S(x_i)$, 当一个词汇表确定时，每个词tokenize的方法集合$S(x_i)$ 就是确定的，每种方法对应一个概率$P(x)$, 依据损失进行删除。
+
+- SentencePiece：
+  
+  把一个句子看作一个整体，再拆成片段，而没有保留天然的词语的概念。一般地，它把空格space也当作一种特殊字符来处理，再用BPE或者Unigram算法来构造词汇表。与Unigram算法联合使用
+
+  
+#### 2.2.2 Bert
+    BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding
+    https://arxiv.org/pdf/1810.04805.pdf
+
+- pretrain:
+
+  - Masked LM
+  - Next Sentence Prediction
+    
+![Bert](./pic/2/bert.jpg "Bert")
+![Bert-2](./pic/2/bert-2.jpg "Bert-2")
+
+#### 2.2.3 GPT
+
+    GPT1：Improving Language Understanding by Generative Pre-Training
+    https://www.cs.ubc.ca/~amuham01/LING530/papers/radford2018improving.pdf
+    GPT2：Language Models are Unsupervised Multitask Learners
+    https://d4mucfpksywv.cloudfront.net/better-language-models/language-models.pdf
+    GPT3：Language Models are Few-Shot Learners
+    https://arxiv.org/pdf/2005.14165.pdf
+    InstructGPT：Training language models to follow instructions with human feedback
+    https://arxiv.org/pdf/2203.02155.pdf
+
+
+GPT1:
+![GPT1](./pic/2/gpt1.jpg "GPT1")
+自回归方式训练，预训练阶段窗口设置，需要主要的是fune-tuning时，损失函数包含预训练损失
+
+GPT2：
+
+堆数据，堆网络参数，网络norm层有变化
+
+GPT3：
+![GPT3](./pic/2/gpt3.jpg "GPT3")
+模型使用spare attention, 175B参数
+
+InstructGPT
+![GPT3](./pic/2/gpt3.jpg "GPT3")
+
+#### 2.2.4 BART
+
+    BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension
+    https://arxiv.org/pdf/1910.13461.pdf
+
+  ![BART1](./pic/2/bart.jpg "BART1") 
+
+Pre-training:
+  - Token Masking
+  - Token Deletion
+  - Text Infilling
+  - Sentence Permutation
+  - Document Rotation
+
+![BART-2](./pic/2/bart-2.jpg "BART-2")
+Fine-Tuning：
+![BART-3](./pic/2/bart-3.jpg "BART-3")
+
+在做machine translation时，先预训练参数，只更新initialized encoder参数，后完全更新参数。
+
+#### 2.2.5 T5
+
+    Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer
+    https://arxiv.org/pdf/1910.10683.pdf
+
+![t5](./pic/2/t5.jpg "t5")
+添加前缀
+
+
+#### 2.2.6 Unilm
+
+    Unified Language Model Pre-training for Natural Language Understanding and Generation
+    https://arxiv.org/pdf/1905.03197.pdf
+#### 2.2.7 GLM
+
+#### 2.2.8 LLaMA
 
 
 ### 2.3 有监督微调
@@ -388,24 +485,15 @@ config = LoraConfig(task_type=TaskType.CAUSAL_LM, target_modules=[".*\.1.*query_
 - MAD-X
 
 
-
-
-
-
-
-
-
 ### 2.4 强化学习
-
-
 
 #### 2.4.1 奖励模型
 
 	https://zhuanlan.zhihu.com/p/595579042
 
-
-
 #### 2.4.2 RLHF
+
+### 2.5 LangChain
 
 
 
