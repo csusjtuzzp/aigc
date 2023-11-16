@@ -42,7 +42,7 @@
   - [4.3 DeepSpeed](#43-deepspeed)
 - [5 大模型应用框架](#5-大模型应用框架)
 - [6 NLP 任务](#6-nlp-任务)
-- [7 视觉](#7-视觉)
+- [7 多模态](#7-多模态)
 
 ### 2 大模型基础
 
@@ -322,6 +322,7 @@ Design Decision:
 
 #### 3.1 数据
 
+
 #### 3.2 多模态模型
 
 ##### 3.2.1 CLIP
@@ -332,15 +333,14 @@ Design Decision:
     High-Resolution Image Synthesis with Latent Diffusion Models
     https://arxiv.org/pdf/2112.10752.pdf
 
-
 ##### 3.2.3 ControlNet
     Adding Conditional Control to Text-to-Image Diffusion Models
     https://arxiv.org/pdf/2302.05543.pdf
 
 ##### 3.2.4 Imagen
-
     Photorealistic Text-to-Image Diffusion Models with Deep Language Understanding
     https://arxiv.org/pdf/2205.11487.pdf
+
 ##### 3.2.5 Dreambooth
 
     https://arxiv.org/pdf/2208.12242.pdf
@@ -360,7 +360,7 @@ Design Decision:
 
 ### 6 NLP 任务
 
-### 7 视觉
+### 7 多模态
 
 
 
