@@ -18,8 +18,8 @@
     - [2.3.1 BitFit](#231-bitfit)
     - [2.3.2 Prompt-Tuning](#232-prompt-tuning)
     - [2.3.3 P-Tuning](#233-p-tuning)
-  - [2.3.4 Prefix-Tuning](#234-prefix-tuning)
-  - [2.3.5 Lora](#235-lora)
+    - [2.3.4 Prefix-Tuning](#234-prefix-tuning)
+    - [2.3.5 Lora](#235-lora)
     - [2.3.6 IA3](#236-ia3)
     - [2.3.7 Adapter](#237-adapter)
   - [2.4 强化学习](#24-强化学习)
@@ -218,7 +218,7 @@ Design Decision:
 
 原理：
 
-#### 2.3.4 Prefix-Tuning
+##### 2.3.4 Prefix-Tuning
 论文：
 
 	Prefix-Tuning: Optimizing Continuous Prompts for Generation
@@ -232,7 +232,7 @@ Design Decision:
 - encode-decode: $[Prefix; x; {Prefix}^,; y]$
 
 
-#### 2.3.5 Lora
+##### 2.3.5 Lora
 
   论文：
 
@@ -259,14 +259,14 @@ Design Decision:
    - $h=W_0 x + \Delta W * x  = W_0 x + P\Lambda Q x$
 
    - 训练过程：
-   ![adalora-0](./pic/3/adalora-0.jpg "adalora-0")
+   ![adalora0](./pic/3/adalora-0.jpg "adalora0")
 
    - 损失函数及参数更新：
-   ![adalora-1](./pic/3/adalora-1.jpg "adalora-1")
-   ![adalora-2](./pic/3/adalora-2.jpg "adalora-2")
+   ![adalora1](./pic/3/adalora-1.jpg "adalora1")
+   ![adalora2](./pic/3/adalora-2.jpg "adalora2")
 
    - 三元组参数重要重要性计算：
-   ![adalora-3](./pic/3/adalora-3.jpg "adalora-3")
+   ![adalora3](./pic/3/adalora-3.jpg "adalora3")
 
 - qlora：
     ![qlora](./pic/3/qlora.jpg "qlora")
