@@ -247,9 +247,9 @@ Design Decision:
 原理：
 - lora：
   
-   $h=W_0 x + \Delta W * x  = W_0 x + BAx = (W_o + BA) x$， 其中 $W_0 \in R^{d \times k}$, $B \in R^{d \times r}$, $A \in R^{r \times k}$, $ r<< min(d, k)$。
+   $h=W_0 x + \Delta W * x  = W_0 x + BAx = (W_o + BA) x$， 其中 $W_0 \in R^{d \times k}$, $B \in R^{d \times r}$, $A \in R^{r \times k}$, $ r << min(d, k)$。
 
-   初始时，$A$: random Gaussion initialization， $B$: zero， 同时为$\Delta W$ 添加缩放系数 $\frac{\alpha} {r}$。
+   初始时, $A$: random Gaussion initialization, $B$: zero， 同时为 $\Delta W $ 添加缩放系数 $ \frac{\alpha} {r}$。
    
 
 ![lora](./pic/3/lora.jpg "lora")
@@ -259,16 +259,21 @@ Design Decision:
    - $h=W_0 x + \Delta W * x  = W_0 x + P\Lambda Q x$
 
    - 训练过程：
+  
    ![adalora0](./pic/3/adalora-0.jpg "adalora0")
 
    - 损失函数及参数更新：
+  
    ![adalora1](./pic/3/adalora-1.jpg "adalora1")
+
    ![adalora2](./pic/3/adalora-2.jpg "adalora2")
 
    - 三元组参数重要重要性计算：
+  
    ![adalora3](./pic/3/adalora-3.jpg "adalora3")
 
 - qlora：
+
     ![qlora](./pic/3/qlora.jpg "qlora")
 
 ##### 2.3.6 IA3
