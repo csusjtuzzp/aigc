@@ -55,25 +55,26 @@
 ##### 2.2.1 数据
 
 ##### 2.2.2 文本分词
-- 分词类性：
+- **分词类性**：
   - word 分词， OOV问题
   - character分词，过长，失去了单词的联系
   - Subword：
     "unfortunately" = "un" + "for" + "tun" + "ate" + "ly"
     常用算法：BPE，SentencePiece，WordPiece等
-- BPE：
+- **BPE**：
   Byte-Pair Encoding。先拆分为character, 然后统计token pair频率，合并， GPT
-- WordPiece：
+- **WordPiece**：
   与BPE 很相近，过程类似，但是会考虑单个token的频率，如果单个token的频率很高，也不会合并。如un-able， un 和 able 概率都很高，即使un-able pair很高，也不会合并
-- Unigram：
+- **Unigram**：
   从一个巨大的词汇表出发，再逐渐删除trimdown其中的词汇，直到size满足预定义。初始的词汇表可以采用所有预分词器分出来的词，再加上所有高频的子串。每次从词汇表中删除词汇的原则是使预定义的损失最小。
   训练文档所有词为$x_1, x_2, ..., X_n$, 每个词token的方法是一个集合$S(x_i)$, 当一个词汇表确定时，每个词tokenize的方法集合$S(x_i)$ 就是确定的，每种方法对应一个概率$P(x)$, 依据损失进行删除。
-- SentencePiece：
+- **SentencePiece**：
   把一个句子看作一个整体，再拆成片段，而没有保留天然的词语的概念。一般地，它把空格space也当作一种特殊字符来处理，再用BPE或者Unigram算法来构造词汇表。与Unigram算法联合使用
   
 ##### 2.2.3 Bert
-		BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding
-		https://arxiv.org/pdf/1810.04805.pdf
+
+    BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding
+    https://arxiv.org/pdf/1810.04805.pdf
 - pretrain:
   - Masked LM
   - Next Sentence Prediction
@@ -149,13 +150,13 @@
 	Llama 2: Open Foundation and Fine-Tuned Chat Models
     https://arxiv.org/pdf/2307.09288.pdf
 
-- LLaMA-1：
+- **LLaMA-1**：
   - decoder only  
   - Pre-normalization
   - SwiGLU activation function
   - Rotary Embeddings
 
-- LLaMA-2：
+- **LLaMA-2**：
 
 #### 2.3 有监督微调
 有监督微调（Supervised Finetuning, SFT）又称指令微调（Instruction Tuning），是指在已经训练好的语言模型的基础上，通过使用有标注的特定任务数据进行进一步的微调，从而使得模型具备遵循指令的能力。经过海量数据预训练后的语言模型虽然具备了大量的“知识”，但是由于其训练时的目标仅是进行下一个词的预测，此时的模型还不能够理解并遵循人类自然语言形式的指令。
@@ -245,7 +246,7 @@ Design Decision:
     https://arxiv.org/pdf/2305.14314.pdf
 
 原理：
-- lora：
+- **lora**：
   
    $h=W_0 x + \Delta W * x  = W_0 x + BAx = (W_o + BA) x$， 其中 $W_0 \in R^{d \times k}$, $B \in R^{d \times r}$, $A \in R^{r \times k}$, $ r << min(d, k)$。
 
@@ -254,7 +255,7 @@ Design Decision:
 
 ![lora](./pic/3/lora.jpg "lora")
 
-- adalora：
+- **adalora**：
 
    - $h=W_0 x + \Delta W * x  = W_0 x + P\Lambda Q x$
 
@@ -272,7 +273,7 @@ Design Decision:
   
    ![adalora3](./pic/3/adalora-3.jpg "adalora3")
 
-- qlora：
+- **qlora**：
 ![qlora](./pic/3/qlora.jpg "qlora")
 
 ##### 2.3.6 IA3
@@ -290,10 +291,10 @@ Design Decision:
     MAD-X: An Adapter-Based Framework for Multi-Task Cross-Lingual Transfer
 
 原理：
-- adapter：
+- **adapter**：
 ![adapter](./pic/3/adapter.jpg "adapter")
 
-- adapterFusion
+- **adapterFusion**
 	- knowledge extraction stage
 	- knowledge composition step
 ![adapterfusion](./pic/3/adapterfusion.jpg "adapterfusion")
@@ -303,7 +304,7 @@ Design Decision:
   ![adapterfusion-stage2](./pic/3/adapterfusion-stage2.jpg "adapterfusion-stage2")
   ![adapterfusion-stage2-2](./pic/3/adapterfusion-stage2-2.jpg "adapterfusion-satge2-2")
   
-- MAD-X
+- **MAD-X**
 
 
 #### 2.4 强化学习
@@ -311,7 +312,6 @@ Design Decision:
 ##### 2.4.1 奖励模型
 
 	https://zhuanlan.zhihu.com/p/595579042
-
 
 
 ##### 2.4.2 RLHF
