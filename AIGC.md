@@ -260,21 +260,20 @@ Design Decision:
 
    - 训练过程：
   
-   ![adalora0](./pic/3/adalora-0.jpg "adalora0")
+![adalora0](./pic/3/adalora-0.jpg "adalora0")
 
    - 损失函数及参数更新：
   
-   ![adalora1](./pic/3/adalora-1.jpg "adalora1")
+![adalora1](./pic/3/adalora-1.jpg "adalora1")
 
-   ![adalora2](./pic/3/adalora-2.jpg "adalora2")
+![adalora2](./pic/3/adalora-2.jpg "adalora2")
 
    - 三元组参数重要重要性计算：
   
    ![adalora3](./pic/3/adalora-3.jpg "adalora3")
 
 - qlora：
-
-    ![qlora](./pic/3/qlora.jpg "qlora")
+![qlora](./pic/3/qlora.jpg "qlora")
 
 ##### 2.3.6 IA3
 	Few-Shot Parameter-Efficient Fine-Tuning is Better and Cheaper than In-Context Learning
