@@ -308,15 +308,29 @@ Design Decision:
 
 
 #### 2.4 强化学习
+```
+https://huggingface.co/docs/trl/example_overview
+https://huggingface.co/blog/rlhf
+```
+
+![rlhf](./pic/4/rlhf-overview.jpg "rlhf")
+
 
 ##### 2.4.1 奖励模型
 
-	https://zhuanlan.zhihu.com/p/595579042
+```
+https://github.com/huggingface/trl/blob/main/examples/scripts/reward_modeling.py
+```
 
+![reward](./pic/4/reward.jpg "reward")
 
 ##### 2.4.2 RLHF
-    pass
+```
+ppo:
+https://github.com/huggingface/trl/blob/main/examples/scripts/ppo.py
+```
 
+![rlhf](./pic/4/rlhf.jpg "rlhf")
 
 ### 3 多模态
 
