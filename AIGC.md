@@ -28,8 +28,9 @@
 - [3 多模态](#3-多模态)
   - [3.1 数据](#31-数据)
   - [3.2 多模态模型](#32-多模态模型)
-    - [3.2.1 CLIP](#321-clip)
-    - [3.2.2 Stable Diffusion](#322-stable-diffusion)
+    - [3.2.1 ViT](#321-vit)
+    - [3.2.2 CLIP](#322-clip)
+    - [3.2.3 Stable Diffusion](#323-stable-diffusion)
     - [3.2.3 ControlNet](#323-controlnet)
     - [3.2.4 Imagen](#324-imagen)
     - [3.2.5 Dreambooth](#325-dreambooth)
@@ -37,12 +38,11 @@
   - [4.1 概述](#41-概述)
   - [4.2 并行策略](#42-并行策略)
     - [4.2.1 数据并行](#421-数据并行)
-    - [4.2.1 模型并行](#421-模型并行)
-    - [4.2.1 张量并行](#421-张量并行)
+    - [4.2.2 模型并行](#422-模型并行)
+    - [4.2.3 张量并行](#423-张量并行)
   - [4.3 DeepSpeed](#43-deepspeed)
 - [5 大模型应用框架](#5-大模型应用框架)
 - [6 NLP 任务](#6-nlp-任务)
-- [7 多模态](#7-多模态)
 
 ### 2 大模型基础
 
@@ -336,27 +336,37 @@ https://github.com/huggingface/trl/blob/main/examples/scripts/ppo.py
 
 #### 3.1 数据
 
-
 #### 3.2 多模态模型
 
-##### 3.2.1 CLIP
+##### 3.2.1 ViT
+    An image is worth 16x16 words: Transformers for image recognition at scale
+    https://arxiv.org/pdf/2010.11929.pdf
+![vit](./pic/6/vit.jpg "vit")
+
+##### 3.2.2 CLIP
     Learning Transferable Visual Models From Natural Language Supervision
     https://arxiv.org/pdf/2103.00020.pdf
+![clip](./pic/6/clip.jpg "clip")
 
-##### 3.2.2 Stable Diffusion
+##### 3.2.3 Stable Diffusion
     High-Resolution Image Synthesis with Latent Diffusion Models
     https://arxiv.org/pdf/2112.10752.pdf
+![stable-diffusion](./pic/6/stable-diffusion.jpg "stable-diffusion")
 
 ##### 3.2.3 ControlNet
     Adding Conditional Control to Text-to-Image Diffusion Models
     https://arxiv.org/pdf/2302.05543.pdf
+![ControlNet-1](./pic/6/controlnet.jpg "ControlNet-1")
+![ControlNet-1](./pic/6/controlnet-1.jpg "ControlNet-1")
+![ControlNet-1](./pic/6/controlnet-2.jpg "ControlNet-1") 
 
 ##### 3.2.4 Imagen
     Photorealistic Text-to-Image Diffusion Models with Deep Language Understanding
     https://arxiv.org/pdf/2205.11487.pdf
+![imagen](./pic/6/imagen.jpg "imagen") 
 
 ##### 3.2.5 Dreambooth
-
+    DreamBooth: Fine Tuning Text-to-Image Diffusion Models for Subject-Driven Generation
     https://arxiv.org/pdf/2208.12242.pdf
 
 ### 4 分布式训练
@@ -365,16 +375,31 @@ https://github.com/huggingface/trl/blob/main/examples/scripts/ppo.py
 #### 4.2 并行策略
 
 ##### 4.2.1 数据并行
-##### 4.2.1 模型并行
-##### 4.2.1 张量并行
-
+- torch DDP
+##### 4.2.2 模型并行
+![imagen](./pic/8/model.jpg "imagen")
+![imagen](./pic/8/model-2.jpg "imagen")
+![imagen](./pic/8/model-3.jpg "imagen")
+##### 4.2.3 张量并行
+![imagen](./pic/8/tensor.jpg "imagen")
+![imagen](./pic/8/tensor-2.jpg "imagen")
 #### 4.3 DeepSpeed
+![imagen](./pic/8/deepspeed1.jpg "imagen")
+
 
 ### 5 大模型应用框架
+**LangChain**
+![imagen](./pic/7/langchain.jpg "imagen")
+LangChain 的提供了以下 6 种标准化、可扩展的接口并且可以外部集成的核心模块：
+  - 模型输入/输出（Model I/O）与语言模型交互的接口；
+  - 数据连接（Data connection）与特定应用程序的数据进行交互的接口；
+  - 链（Chains）用于复杂的应用的调用序列；
+  - 智能体（Agents）语言模型作为推理器决定要执行的动作序列；
+  - 记忆（Memory）用于链的多次运行之间持久化应用程序状态；
+  - 回调（Callbacks）记录和流式传输任何链式组装的中间步骤。
+
 
 ### 6 NLP 任务
-
-### 7 多模态
 
 
 
