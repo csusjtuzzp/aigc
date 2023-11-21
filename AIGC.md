@@ -406,7 +406,11 @@ LangChain 的提供了以下 6 种标准化、可扩展的接口并且可以外�
 
 #### 6.1 意图识别
 #### 6.2 文本匹配
+
 #### 6.3 对话管理
+
+    A Survey on Dialog Management: Recent Advances and Challenges
+    https://arxiv.org/pdf/2005.02233.pdf
 
 
 
