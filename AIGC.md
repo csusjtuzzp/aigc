@@ -56,6 +56,16 @@
 #### 2.2 预训练模型
 
 ##### 2.2.1 数据
+- Colossal Clean Crawled Corpus(C4)
+- English CommonCrawl
+- Github
+- Wikipedia
+- Gutenberg and Books3
+- ArXiv
+- Stack Exchange
+  
+  ![大模型框架图](./pic/2/data.jpg "大模型框架图")
+
 
 ##### 2.2.2 文本分词
 - **分词类性**：
@@ -106,7 +116,12 @@
 	模型使用spare attention, 175B参数
 
 - InstructGPT
-	![GPT3](./pic/2/gpt3.jpg "GPT3")
+	![instructgpt](./pic/2/instructgpt.jpg "instructgpt")
+  - Supervised fine-tuning (SFT)
+  - Reward modeling (RM)： 使用6B 模型替代175B模型(175B模型不稳定)，损失函数如下：k in [4, 9]
+  ![instructgpt](./pic/2/instructgpt-2.jpg "instructgpt")
+  - Reinforcement learning (RL)
+  	![instructgpt](./pic/2/instructgpt-3.jpg "instructgpt")
 
 ##### 2.2.5 BART
 
@@ -130,6 +145,55 @@
 
  ![BART-3](./pic/2/bart-3.jpg "BART-3")
 
+ ```
+#  model defination
+https://github.com/facebookresearch/fairseq/blob/main/fairseq/models/bart/model.py
+
+ # transformers
+ # https://huggingface.co/docs/transformers/model_doc/bart
+
+ from transformers import BartForConditionalGeneration, BartTokenizer
+
+model = BartForConditionalGeneration.from_pretrained("facebook/bart-large", forced_bos_token_id=0)
+tok = BartTokenizer.from_pretrained("facebook/bart-large")
+example_english_phrase = "UN Chief Says There Is No <mask> in Syria"
+batch = tok(example_english_phrase, return_tensors="pt")
+generated_ids = model.generate(batch["input_ids"])
+assert tok.batch_decode(generated_ids, skip_special_tokens=True) == [
+    "UN Chief Says There Is No Plan to Stop Chemical Weapons in Syria"
+]
+
+# torch
+# https://github.com/facebookresearch/fairseq/tree/main/examples/bart
+import torch
+bart = torch.hub.load('pytorch/fairseq', 'bart.large')
+bart.eval()  # disable dropout (or leave in train mode to finetune)
+tokens = bart.encode('Hello world!')
+assert tokens.tolist() == [0, 31414, 232, 328, 2]
+bart.decode(tokens)  # 'Hello world!'
+# Extract the last layer's features
+last_layer_features = bart.extract_features(tokens)
+assert last_layer_features.size() == torch.Size([1, 5, 1024])
+
+# Extract all layer's features from decoder (layer 0 is the embedding layer)
+all_layers = bart.extract_features(tokens, return_all_hiddens=True)
+assert len(all_layers) == 13
+assert torch.all(all_layers[-1] == last_layer_features)
+
+# Download BART already finetuned for MNLI
+bart = torch.hub.load('pytorch/fairseq', 'bart.large.mnli')
+bart.eval()  # disable dropout for evaluation
+
+# Encode a pair of sentences and make a prediction
+tokens = bart.encode('BART is a seq2seq model.', 'BART is not sequence to sequence.')
+bart.predict('mnli', tokens).argmax()  # 0: contradiction
+
+# Encode another pair of sentences
+tokens = bart.encode('BART is denoising autoencoder.', 'BART is version of autoencoder.')
+bart.predict('mnli', tokens).argmax()  # 2: entailment
+
+ ```
+
 ##### 2.2.6 T5
 
     Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer
@@ -137,6 +201,64 @@
 
    ![t5](./pic/2/t5.jpg "t5")
 添加前缀
+
+```
+# TF
+https://github.com/google-research/text-to-text-transfer-transformer
+
+# transformers
+# pre-training
+from transformers import T5Tokenizer, T5ForConditionalGeneration
+
+tokenizer = T5Tokenizer.from_pretrained("t5-small")
+model = T5ForConditionalGeneration.from_pretrained("t5-small")
+
+input_ids = tokenizer("The <extra_id_0> walks in <extra_id_1> park", return_tensors="pt").input_ids
+labels = tokenizer("<extra_id_0> cute dog <extra_id_1> the <extra_id_2>", return_tensors="pt").input_ids
+
+# the forward function automatically creates the correct decoder_input_ids
+loss = model(input_ids=input_ids, labels=labels).loss
+loss.item()
+
+# Supervised training 
+from transformers import T5Tokenizer, T5ForConditionalGeneration
+
+tokenizer = T5Tokenizer.from_pretrained("t5-small")
+model = T5ForConditionalGeneration.from_pretrained("t5-small")
+
+input_ids = tokenizer("translate English to German: The house is wonderful.", return_tensors="pt").input_ids
+labels = tokenizer("Das Haus ist wunderbar.", return_tensors="pt").input_ids
+
+# the forward function automatically creates the correct decoder_input_ids
+loss = model(input_ids=input_ids, labels=labels).loss
+loss.item()
+
+
+# inferences encoder-decoder
+from transformers import T5Tokenizer, T5ForConditionalGeneration
+
+tokenizer = T5Tokenizer.from_pretrained("t5-small")
+model = T5ForConditionalGeneration.from_pretrained("t5-small")
+
+input_ids = tokenizer("translate English to German: The house is wonderful.", return_tensors="pt").input_ids
+outputs = model.generate(input_ids)
+print(tokenizer.decode(outputs[0], skip_special_tokens=True))
+
+
+# task 2: span-mask denoising objective
+from transformers import T5Tokenizer, T5ForConditionalGeneration
+
+tokenizer = T5Tokenizer.from_pretrained("t5-small")
+model = T5ForConditionalGeneration.from_pretrained("t5-small")
+
+input_ids = tokenizer("The <extra_id_0> walks in <extra_id_1> park", return_tensors="pt").input_ids
+
+sequence_ids = model.generate(input_ids)
+sequences = tokenizer.batch_decode(sequence_ids)
+sequences
+['<pad><extra_id_0> park offers<extra_id_1> the<extra_id_2> park.</s>']
+
+```
 
 
 ##### 2.2.7 Unilm
