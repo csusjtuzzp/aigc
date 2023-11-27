@@ -39,8 +39,11 @@
   - [4.2 并行策略](#42-并行策略)
     - [4.2.1 数据并行](#421-数据并行)
     - [4.2.2 模型并行](#422-模型并行)
-    - [4.2.3 张量并行](#423-张量并行)
-  - [4.3 DeepSpeed](#43-deepspeed)
+  - [4.3 混合精度训练](#43-混合精度训练)
+  - [4.4 Flash Attention](#44-flash-attention)
+  - [4.5 DeepSpeed](#45-deepspeed)
+    - [4.5.1 简介](#451-简介)
+    - [4.5.1 ZeRO](#451-zero)
 - [5 大模型应用框架](#5-大模型应用框架)
 - [6 NLP 任务](#6-nlp-任务)
   - [6.1 意图识别](#61-意图识别)
@@ -260,7 +263,6 @@ sequences
 
 ```
 
-
 ##### 2.2.7 Unilm
 
     Unified Language Model Pre-training for Natural Language Understanding and Generation
@@ -281,7 +283,16 @@ sequences
   - SwiGLU activation function
   - Rotary Embeddings
 
+```
+# defination
+https://github.com/facebookresearch/llama/blob/llama_v1/llama/model.py
+```
+
 - **LLaMA-2**：
+
+```
+https://github.com/facebookresearch/llama-recipes/
+```
 
 #### 2.3 有监督微调
 有监督微调（Supervised Finetuning, SFT）又称指令微调（Instruction Tuning），是指在已经训练好的语言模型的基础上，通过使用有标注的特定任务数据进行进一步的微调，从而使得模型具备遵循指令的能力。经过海量数据预训练后的语言模型虽然具备了大量的“知识”，但是由于其训练时的目标仅是进行下一个词的预测，此时的模型还不能够理解并遵循人类自然语言形式的指令。
@@ -495,21 +506,121 @@ https://github.com/huggingface/trl/blob/main/examples/scripts/ppo.py
     https://arxiv.org/pdf/2208.12242.pdf
 
 ### 4 分布式训练
-
 #### 4.1 概述
+
+  - 通讯
+    - 点对点通信
+    - 集体通信
+      - Scatter
+      - Gather
+      - Reduce
+      - All-Reduce
+      - Broadcast
+      - All-Gather
+    - backend
+      - nccl
+      - mpi
+      - gloo
+  ```
+  https://pytorch.org/tutorials/intermediate/dist_tuto.html
+  https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/collectives.html#
+  ``` 
+  ![gather-reduce](./pic/4/gather-reduce.jpg "gather-reduce")
+    ![gather-reduce](./pic/4/all-gather.jpg "gather-reduce")
+
 #### 4.2 并行策略
 
 ##### 4.2.1 数据并行
-- torch DDP
+  ```
+  https://pytorch.org/docs/stable/notes/ddp.html
+  ```
+  ![ddp](./pic/4/ddp.jpg "ddp")
+
 ##### 4.2.2 模型并行
-![imagen](./pic/8/model.jpg "imagen")
-![imagen](./pic/8/model-2.jpg "imagen")
-![imagen](./pic/8/model-3.jpg "imagen")
-##### 4.2.3 张量并行
-![imagen](./pic/8/tensor.jpg "imagen")
-![imagen](./pic/8/tensor-2.jpg "imagen")
-#### 4.3 DeepSpeed
-![imagen](./pic/8/deepspeed1.jpg "imagen")
+- 流水线并行
+![liushui-1](./pic/4/model.jpg "liushui-1")
+![liushui-2](./pic/4/model-2.jpg "liushui-2")
+![liushui-3](./pic/4/model-3.jpg "liushui-3")
+- 张量并行
+```
+Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism
+https://arxiv.org/pdf/1909.08053.pdf 
+```
+![tensor](./pic/4/tensor.jpg "tensor")
+![tensor-2](./pic/4/tensor-2.jpg "tensor-2")
+![tensor-4](./pic/4/tensor-4.jpg "tensor-4")
+![tensor-3](./pic/4/tensor-3.jpg "tensor-3")
+
+#### 4.3 混合精度训练
+- torch.float32
+- torch.float16
+- torch.bfloat16
+![mix-precision](./pic/4/mix-precision.jpg "mix-precision")
+
+![mix-precision](./pic/4/mix-precision-2.jpg "mix-precision")
+  ```
+  https://pytorch.org/docs/stable/amp.html
+  # Creates model and optimizer in default precision
+  from torch.cuda.amp import autocast as autocast
+  from torch.cuda.amp import GradScaler
+
+  model = Net().cuda()
+  optimizer = optim.SGD(model.parameters(), ...)
+
+  # Creates a GradScaler once at the beginning of training.
+  scaler = GradScaler()
+
+  for epoch in epochs:
+      for input, target in data:
+          optimizer.zero_grad()
+
+          # Runs the forward pass with autocasting.
+          with autocast(device_type='cuda', dtype=torch.float16):
+              output = model(input)
+              loss = loss_fn(output, target)
+
+          # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
+          # Backward passes under autocast are not recommended.
+          # Backward ops run in the same dtype autocast chose for corresponding forward ops.
+          scaler.scale(loss).backward()
+
+          # scaler.step() first unscales the gradients of the optimizer's assigned params.
+          # If these gradients do not contain infs or NaNs, optimizer.step() is then called,
+          # otherwise, optimizer.step() is skipped.
+          scaler.step(optimizer)
+
+          # Updates the scale for next iteration.
+          scaler.update()
+  ```
+#### 4.4 Flash Attention
+
+#### 4.5 DeepSpeed
+##### 4.5.1 简介
+![deepspeed1](./pic/4/deepspeed1.jpg "deepspeed1")
+![deepspeed1](./pic/4/deepspeed3.jpg "deepspeed1")
+  - APIs：DeepSpeed 提供了易于使用的 API 接口，简化了训练模型和推断的过程。用户只需通过调用几个 API 接口即可完成任务。通过“initialize”接口可以初始化引擎，并在参数中配置训练参数和优化技术等。这些配置参数通常保存在名为“ds_config.json”的文件中。。
+  - RunTime：DeepSpeed 的核心运行时组件，使用 Python 语言实现，负责管理、执行和优化性能。它承担了将训练任务部署到分布式设备的功能，包括数据分区、模型分区、系统优化、微调、故障检测以及检查点的保存和加载等任务。
+  - Ops：DeepSpeed 的底层内核组件，使用 C++ 和 CUDA 实现。它优化计算和通信过程，提供了一系列底层操作，包括 Ultrafast Transformer Kernels、fuse LAN kernels、Customary Deals等。Ops 的目标是通过高效的计算和通信加速深度学习训练过程。
+##### 4.5.1 ZeRO
+
+零冗余优化器（Zero Redundancy Optimizer，缩写为Zero）是一种用于大规模分布式深度学习的新型内存优化技术。ZeRO可以在当前一代GPU集群上以当前最佳系统吞吐量的三到五倍的速度训练具有1000亿个参数的深度学习模型。它还为训练具有数万亿参数的模型提供了一条清晰的道路，展示了深度学习系统技术的前所未有的飞跃。ZeRO作为DeepSpeed的一部分，用于提高显存效率和计算效率。
+假定模型参数为$\Theta$, 模型参数和梯度分别为$2 \Theta$(fp16), adam 优化器 copy参数、梯度、动量分别为$4\Theta$
+- ZeRO-0： 数据并行
+- ZeRO-1： 对Adam 优化器状态进行分区
+- ZeRO-2： 对模型梯度进行分区
+- ZeRO-3： 对模型参数也进行分区
+![zero](./pic/4/zero.jpg "zero")
+
+- ZeRO-Offload：
+- ZeRO-Infinity：
+- ZeRO++: 
+  ```
+  https://github.com/microsoft/DeepSpeed/tree/master/blogs/zeropp/chinese
+  ```
+
+
+
+
 
 
 ### 5 大模型应用框架
