@@ -44,6 +44,10 @@
   - [4.5 DeepSpeed](#45-deepspeed)
     - [4.5.1 简介](#451-简介)
     - [4.5.1 ZeRO](#451-zero)
+    - [4.5.2 DeepSpeed-Chat](#452-deepspeed-chat)
+    - [4.5.3 DeepSpeed-VisualChat](#453-deepspeed-visualchat)
+  - [4.6 模型推理](#46-模型推理)
+    - [4.6.1 vLLM](#461-vllm)
 - [5 大模型应用框架](#5-大模型应用框架)
 - [6 NLP 任务](#6-nlp-任务)
   - [6.1 意图识别](#61-意图识别)
@@ -594,6 +598,24 @@ https://arxiv.org/pdf/1909.08053.pdf
   ```
 #### 4.4 Flash Attention
 
+```
+FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness
+https://arxiv.org/pdf/2205.14135.pdf
+```
+![flash](./pic/4/flash-attention.jpg "flash")
+不节约FLOPs，优化GPU中减少对HBM的访问
+还有Flash Attention V2, V3, V4 版本(need update)
+
+```
+from xformers import ops as xops
+query_states = query_states.transpose(1, 2)
+key_states = key_states.transpose(1, 2)
+value_states = value_states.transpose(1, 2)
+attn_output = xops.memory_efficient_attention(
+    query_states, key_states, value_states, attn_bias=xops.LowerTriangularMask(), p=self.dropout_prob
+)
+```
+
 #### 4.5 DeepSpeed
 ##### 4.5.1 简介
 ![deepspeed1](./pic/4/deepspeed1.jpg "deepspeed1")
@@ -602,26 +624,30 @@ https://arxiv.org/pdf/1909.08053.pdf
   - RunTime：DeepSpeed 的核心运行时组件，使用 Python 语言实现，负责管理、执行和优化性能。它承担了将训练任务部署到分布式设备的功能，包括数据分区、模型分区、系统优化、微调、故障检测以及检查点的保存和加载等任务。
   - Ops：DeepSpeed 的底层内核组件，使用 C++ 和 CUDA 实现。它优化计算和通信过程，提供了一系列底层操作，包括 Ultrafast Transformer Kernels、fuse LAN kernels、Customary Deals等。Ops 的目标是通过高效的计算和通信加速深度学习训练过程。
 ##### 4.5.1 ZeRO
-
 零冗余优化器（Zero Redundancy Optimizer，缩写为Zero）是一种用于大规模分布式深度学习的新型内存优化技术。ZeRO可以在当前一代GPU集群上以当前最佳系统吞吐量的三到五倍的速度训练具有1000亿个参数的深度学习模型。它还为训练具有数万亿参数的模型提供了一条清晰的道路，展示了深度学习系统技术的前所未有的飞跃。ZeRO作为DeepSpeed的一部分，用于提高显存效率和计算效率。
-假定模型参数为$\Theta$, 模型参数和梯度分别为$2 \Theta$(fp16), adam 优化器 copy参数、梯度、动量分别为$4\Theta$
+
+假定模型参数为$\Theta$, 模型参数和梯度分别为$2 \Theta$(fp16), adam 优化器 copy参数、梯度、动量分别为$4\Theta$。(了解阶段)
 - ZeRO-0： 数据并行
 - ZeRO-1： 对Adam 优化器状态进行分区
 - ZeRO-2： 对模型梯度进行分区
 - ZeRO-3： 对模型参数也进行分区
 ![zero](./pic/4/zero.jpg "zero")
 
-- ZeRO-Offload：
-- ZeRO-Infinity：
-- ZeRO++: 
+- ZeRO-Offload：利用 CPU 内存减少 GPU 内存的压力，集成到了ZeRO-2中
+- ZeRO-Infinity：在 ZeRO-Offload 的基础上进一步优化，从ZeRO-2 延伸到了 ZeRO-3
+- ZeRO++:  优化通信时的压力
   ```
   https://github.com/microsoft/DeepSpeed/tree/master/blogs/zeropp/chinese
   ```
 
+##### 4.5.2 DeepSpeed-Chat
+project/deepspeed/DeepSpeed-Chat
+##### 4.5.3 DeepSpeed-VisualChat
+project/deepspeed/DeepSpeed-VisualChat
 
-
-
-
+#### 4.6 模型推理
+##### 4.6.1 vLLM
+- PageAttention
 
 ### 5 大模型应用框架
 **LangChain**
@@ -636,10 +662,8 @@ LangChain 的提供了以下 6 种标准化、可扩展的接口并且可以外�
 
 
 ### 6 NLP 任务
-
 #### 6.1 意图识别
 #### 6.2 文本匹配
-
 #### 6.3 对话管理
 
     A Survey on Dialog Management: Recent Advances and Challenges
