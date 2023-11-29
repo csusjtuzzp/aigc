@@ -68,7 +68,7 @@
 
 #### 2.1 构建框架
 
-![大模型框架图](./pic/2-1.png "大模型框架图")
+![大模型框架图](./pic/2/2-1.png "大模型框架图")
 
 #### 2.2 预训练模型
 
@@ -81,7 +81,7 @@
 - ArXiv
 - Stack Exchange
   
-  ![大模型框架图](./pic/2/data.jpg "大模型框架图")
+  ![大模型框架图](./pic/2/2-2/data.jpg "大模型框架图")
 
 
 ##### 2.2.2 文本分词
@@ -109,8 +109,8 @@
   - Masked LM
   - Next Sentence Prediction
     
-![Bert](./pic/2/bert.jpg "Bert")
-![Bert-2](./pic/2/bert-2.jpg "Bert-2")
+![Bert](./pic/2/2-2/bert.jpg "Bert")
+![Bert-2](./pic/2/2-2/bert-2.jpg "Bert-2")
 
 ##### 2.2.4 GPT
     GPT1：Improving Language Understanding by Generative Pre-Training
@@ -122,23 +122,23 @@
     InstructGPT：Training language models to follow instructions with human feedback
     https://arxiv.org/pdf/2203.02155.pdf
 - GPT1:
-![GPT1](./pic/2/gpt1.jpg "GPT1")
+![GPT1](./pic/2/2-2/gpt1.jpg "GPT1")
 自回归方式训练，预训练阶段窗口设置，需要主要的是fune-tuning时，损失函数包含预训练损失
 
 - GPT2：
 	堆数据，堆网络参数，网络norm层有变化
 
 - GPT3：
-	![GPT3](./pic/2/gpt3.jpg "GPT3")
+	![GPT3](./pic/2/2-2/gpt3.jpg "GPT3")
 	模型使用spare attention, 175B参数
 
 - InstructGPT
-	![instructgpt](./pic/2/instructgpt.jpg "instructgpt")
+	![instructgpt](./pic/2/2-2/instructgpt.jpg "instructgpt")
   - Supervised fine-tuning (SFT)
   - Reward modeling (RM)： 使用6B 模型替代175B模型(175B模型不稳定)，损失函数如下：k in [4, 9]
-  ![instructgpt](./pic/2/instructgpt-2.jpg "instructgpt")
+  ![instructgpt](./pic/2/2-2/instructgpt-2.jpg "instructgpt")
   - Reinforcement learning (RL)
-  	![instructgpt](./pic/2/instructgpt-3.jpg "instructgpt")
+  	![instructgpt](./pic/2/2-2/instructgpt-3.jpg "instructgpt")
 
 ##### 2.2.5 BART
 
@@ -146,7 +146,7 @@
     https://arxiv.org/pdf/1910.13461.pdf
 
 
-  ![BART1](./pic/2/bart.jpg "BART1") 
+  ![BART1](./pic/2/2-2/bart.jpg "BART1") 
 
 - Pre-training:
   - Token Masking
@@ -155,12 +155,12 @@
   - Sentence Permutation
   - Document Rotation
 
-![BART-2](./pic/2/bart-2.jpg "BART-2")
+![BART-2](./pic/2/2-2/bart-2.jpg "BART-2")
 
 - Fine-Tuning：
 	在做machine translation时，先预训练参数，只更新initialized encoder参数，后完全更新参数。
 
- ![BART-3](./pic/2/bart-3.jpg "BART-3")
+ ![BART-3](./pic/2/2-2/bart-3.jpg "BART-3")
 
  ```
 #  model defination
@@ -216,7 +216,7 @@ bart.predict('mnli', tokens).argmax()  # 2: entailment
     Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer
     https://arxiv.org/pdf/1910.10683.pdf
 
-   ![t5](./pic/2/t5.jpg "t5")
+   ![t5](./pic/2/2-2/t5.jpg "t5")
 添加前缀
 
 ```
@@ -339,7 +339,7 @@ https://github.com/facebookresearch/llama-recipes/
 
 	只调节神经网络的bias参数
 
-![BitFit](./pic/3/bitfit.png "BitFit")
+![BitFit](./pic/2/2-3/bitfit.png "BitFit")
 
 论文：
 
@@ -349,7 +349,7 @@ https://github.com/facebookresearch/llama-recipes/
 
 ##### 2.3.2 Prompt-Tuning
 
-![BitFit](./pic/3/prompt-tuning.png "BitFit")
+![BitFit](./pic/2/2-3/prompt-tuning.png "BitFit")
 
 论文：
 
@@ -394,7 +394,7 @@ Design Decision:
 
 原理：
 
-![prefix](./pic/3/prefix.jpg "prefix")
+![prefix](./pic/2/2-3/prefix.jpg "prefix")
 
 - autoregressive LM: $[Prefix; x]$
 - encode-decode: $[Prefix; x; {Prefix}^,; y]$
@@ -420,7 +420,7 @@ Design Decision:
    初始时, $A$: random Gaussion initialization, $B$: zero， 同时为 $\Delta W $ 添加缩放系数 $ \frac{\alpha} {r}$。
    
 
-![lora](./pic/3/lora.jpg "lora")
+![lora](./pic/2/2-3/lora.jpg "lora")
 
 - **adalora**：
 
@@ -428,20 +428,20 @@ Design Decision:
 
    - 训练过程：
   
-![adalora0](./pic/3/adalora-0.jpg "adalora0")
+![adalora0](./pic/2/2-3/adalora-0.jpg "adalora0")
 
    - 损失函数及参数更新：
   
-![adalora1](./pic/3/adalora-1.jpg "adalora1")
+![adalora1](./pic/2/2-3/adalora-1.jpg "adalora1")
 
-![adalora2](./pic/3/adalora-2.jpg "adalora2")
+![adalora2](./pic/2/2-3/adalora-2.jpg "adalora2")
 
    - 三元组参数重要重要性计算：
   
-   ![adalora3](./pic/3/adalora-3.jpg "adalora3")
+   ![adalora3](./pic/2/2-3/adalora-3.jpg "adalora3")
 
 - **qlora**：
-![qlora](./pic/3/qlora.jpg "qlora")
+![qlora](./pic/2/2-3/qlora.jpg "qlora")
 
 ##### 2.3.6 IA3
 	Few-Shot Parameter-Efficient Fine-Tuning is Better and Cheaper than In-Context Learning
@@ -459,17 +459,17 @@ Design Decision:
 
 原理：
 - **adapter**：
-![adapter](./pic/3/adapter.jpg "adapter")
+![adapter](./pic/2/2-3/adapter.jpg "adapter")
 
 - **adapterFusion**
 	- knowledge extraction stage
 	- knowledge composition step
-![adapterfusion](./pic/3/adapterfusion.jpg "adapterfusion")
-![adapterfusion-2](./pic/3/adapterfusion-2.jpg "adapterfusion-2")
-  ![adapterfusion-sta](./pic/3/adapterfusion-sta.jpg "adapterfusion-sta")
-  ![adapterfusion-mta](./pic/3/adapterfusion-mta.jpg "adapterfusion-mta")
-  ![adapterfusion-stage2](./pic/3/adapterfusion-stage2.jpg "adapterfusion-stage2")
-  ![adapterfusion-stage2-2](./pic/3/adapterfusion-stage2-2.jpg "adapterfusion-satge2-2")
+![adapterfusion](./pic/2/2-3/adapterfusion.jpg "adapterfusion")
+![adapterfusion-2](./pic/2/2-3/adapterfusion-2.jpg "adapterfusion-2")
+  ![adapterfusion-sta](./pic/2/2-3/adapterfusion-sta.jpg "adapterfusion-sta")
+  ![adapterfusion-mta](./pic/2/2-3/adapterfusion-mta.jpg "adapterfusion-mta")
+  ![adapterfusion-stage2](./pic/2/2-3/adapterfusion-stage2.jpg "adapterfusion-stage2")
+  ![adapterfusion-stage2-2](./pic/2/2-3/adapterfusion-stage2-2.jpg "adapterfusion-satge2-2")
   
 - **MAD-X**
 
@@ -480,7 +480,7 @@ https://huggingface.co/docs/trl/example_overview
 https://huggingface.co/blog/rlhf
 ```
 
-![rlhf](./pic/4/rlhf-overview.jpg "rlhf")
+![rlhf](./pic/2/2-4/rlhf-overview.jpg "rlhf")
 
 
 ##### 2.4.1 奖励模型
@@ -489,7 +489,7 @@ https://huggingface.co/blog/rlhf
 https://github.com/huggingface/trl/blob/main/examples/scripts/reward_modeling.py
 ```
 
-![reward](./pic/4/reward.jpg "reward")
+![reward](./pic/2/2-4/reward.jpg "reward")
 
 ##### 2.4.2 RLHF
 ```
@@ -497,7 +497,7 @@ ppo:
 https://github.com/huggingface/trl/blob/main/examples/scripts/ppo.py
 ```
 
-![rlhf](./pic/4/rlhf.jpg "rlhf")
+![rlhf](./pic/2/2-4/rlhf.jpg "rlhf")
 
 ### 3 多模态
 
@@ -508,29 +508,29 @@ https://github.com/huggingface/trl/blob/main/examples/scripts/ppo.py
 ##### 3.2.1 ViT
     An image is worth 16x16 words: Transformers for image recognition at scale
     https://arxiv.org/pdf/2010.11929.pdf
-![vit](./pic/6/vit.jpg "vit")
+![vit](./pic/3/3-2/vit.jpg "vit")
 
 ##### 3.2.2 CLIP
     Learning Transferable Visual Models From Natural Language Supervision
     https://arxiv.org/pdf/2103.00020.pdf
-![clip](./pic/6/clip.jpg "clip")
+![clip](./pic/3/3-2/clip.jpg "clip")
 
 ##### 3.2.3 Stable Diffusion
     High-Resolution Image Synthesis with Latent Diffusion Models
     https://arxiv.org/pdf/2112.10752.pdf
-![stable-diffusion](./pic/6/stable-diffusion.jpg "stable-diffusion")
+![stable-diffusion](./pic/3/3-2/stable-diffusion.jpg "stable-diffusion")
 
 ##### 3.2.3 ControlNet
     Adding Conditional Control to Text-to-Image Diffusion Models
     https://arxiv.org/pdf/2302.05543.pdf
-![ControlNet-1](./pic/6/controlnet.jpg "ControlNet-1")
-![ControlNet-1](./pic/6/controlnet-1.jpg "ControlNet-1")
-![ControlNet-1](./pic/6/controlnet-2.jpg "ControlNet-1") 
+![ControlNet-1](./pic/3/3-2/controlnet.jpg "ControlNet-1")
+![ControlNet-1](./pic/3/3-2/controlnet-1.jpg "ControlNet-1")
+![ControlNet-1](./pic/3/3-2/controlnet-2.jpg "ControlNet-1") 
 
 ##### 3.2.4 Imagen
     Photorealistic Text-to-Image Diffusion Models with Deep Language Understanding
     https://arxiv.org/pdf/2205.11487.pdf
-![imagen](./pic/6/imagen.jpg "imagen") 
+![imagen](./pic/3/3-2/imagen.jpg "imagen") 
 
 ##### 3.2.5 Dreambooth
     DreamBooth: Fine Tuning Text-to-Image Diffusion Models for Subject-Driven Generation
