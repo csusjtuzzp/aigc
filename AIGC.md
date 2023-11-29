@@ -49,6 +49,16 @@
   - [4.6 模型推理](#46-模型推理)
     - [4.6.1 vLLM](#461-vllm)
 - [5 大模型应用框架](#5-大模型应用框架)
+  - [5.1 LangChain](#51-langchain)
+    - [5.1.1 LangChain 介绍](#511-langchain-介绍)
+    - [5.1.2 Model I/O](#512-model-io)
+    - [5.1.3 Data connection](#513-data-connection)
+    - [5.1.4 Chain](#514-chain)
+    - [5.1.4 Memory](#514-memory)
+    - [5.1.5 Agents](#515-agents)
+    - [5.1.6 Callbacks](#516-callbacks)
+    - [5.1.7 知识库问答系统](#517-知识库问答系统)
+  - [5.2 LangChain-ChatGLM](#52-langchain-chatglm)
 - [6 NLP 任务](#6-nlp-任务)
   - [6.1 意图识别](#61-意图识别)
   - [6.2 文本匹配](#62-文本匹配)
@@ -280,6 +290,7 @@ sequences
     https://arxiv.org/pdf/2302.13971.pdf
 	Llama 2: Open Foundation and Fine-Tuned Chat Models
     https://arxiv.org/pdf/2307.09288.pdf
+  
 
 - **LLaMA-1**：
   - decoder only  
@@ -295,8 +306,24 @@ https://github.com/facebookresearch/llama/blob/llama_v1/llama/model.py
 - **LLaMA-2**：
 
 ```
+Llama 2: Open Foundation and Fine-Tuned Chat Models
+https://scontent-sin6-2.xx.fbcdn.net/v/t39.2365-6/10000000_662098952474184_2584067087619170692_n.pdf?_nc_cat=105&ccb=1-7&_nc_sid=3c67a6&_nc_ohc=ai5Sz-xGRjkAX_I4yLO&_nc_ht=scontent-sin6-2.xx&oh=00_AfD0jghQmKakw5E2DP_nFdxK5HaI9BmXlIrZFa_ZTyrgRg&oe=656A72BF
 https://github.com/facebookresearch/llama-recipes/
 ```
+- data:
+  - 混合公开数据集，无meta数据，去除隐私数据
+  - 2 trillion tokens
+  - vocabulary size is 32k tokens
+- model：
+  - Llama2： 7B, 13B, 70B
+  - Llama2-Chat: 7B, 13B, 70B, dialogue use cases
+- model structure:
+  - pre-normalization using RMSNorm
+  - SwiGLU activation function
+  - rotary positional embeddings(RoPE)
+- Supervised Fine-Tuning (SFT)：
+  - Quality Is All You Need
+- Reinforcement Learning with Human Feedback (RLHF)
 
 #### 2.3 有监督微调
 有监督微调（Supervised Finetuning, SFT）又称指令微调（Instruction Tuning），是指在已经训练好的语言模型的基础上，通过使用有标注的特定任务数据进行进一步的微调，从而使得模型具备遵循指令的能力。经过海量数据预训练后的语言模型虽然具备了大量的“知识”，但是由于其训练时的目标仅是进行下一个词的预测，此时的模型还不能够理解并遵循人类自然语言形式的指令。
@@ -650,8 +677,13 @@ project/deepspeed/DeepSpeed-VisualChat
 - PageAttention
 
 ### 5 大模型应用框架
-**LangChain**
-![imagen](./pic/7/langchain.jpg "imagen")
+#### 5.1 LangChain
+##### 5.1.1 LangChain 介绍
+```
+https://www.langchain.asia/
+```
+![langchain](./pic/5/langchain.jpg "langchain")
+
 LangChain 的提供了以下 6 种标准化、可扩展的接口并且可以外部集成的核心模块：
   - 模型输入/输出（Model I/O）与语言模型交互的接口；
   - 数据连接（Data connection）与特定应用程序的数据进行交互的接口；
@@ -660,6 +692,362 @@ LangChain 的提供了以下 6 种标准化、可扩展的接口并且可以外�
   - 记忆（Memory）用于链的多次运行之间持久化应用程序状态；
   - 回调（Callbacks）记录和流式传输任何链式组装的中间步骤。
 
+##### 5.1.2 Model I/O
+LangChain 中模型输入/输出模块是与各种大语言模型进行交互的基本组件，是大语言模型应用的核心元素。
+主要包含以下部分：Prompts、Language Models 以
+及 Output Parsers。用户原始输入与模型和示例进行组合，然后输入给大语言模型，再根据大语言模型的返回结果进行输出或者结构化处理。
+- Prompts：
+  提示词模板、提示词动态选择和输入管理
+  ```
+  from langchain import PromptTemplate
+  template = """\
+  You are a naming consultant for new companies.
+  What is a good name for a company that makes {product}?
+  """
+  prompt = PromptTemplate.from_template(template)
+  prompt.format(product="colorful socks")
+  ```
+  如果有多个提示词，需要选择合适的提示词模板。LangChain 中提供了 Example Selector 提供各种类型的选择，包括LengthBasedExampleSelector、MaxMarginalRelevanceExampleSelector、SemanticSimilarityExampleSelector、NGramOverlapExampleSelector 等，可以提供按照句子长度、最大边际相关性、语义相似度、n-gram 覆盖率等多种选择方式
+- Language Models
+  LangChain 提供了两种类型模型的接口和集成：LLMs，接受文本字符串作为输入并返回文本字符串；Chat Model，由大语言模型支持，但接受 Chat Messages 列表作为输入并返回 Chat Message。在 LangChain 中，LLMs 指纯文本完成模型。接受字符串提示词作为输入，并输出字符串完成。
+  ```
+  from langchain.llms import OpenAI
+  llm = OpenAI()
+  llm.predict("say hi!") # '\n\nHi there!'
+
+  from langchain.chat_models import ChatOpenAI
+  from langchain.schema import (AIMessage, HumanMessage, SystemMessage)
+  chat = ChatOpenAI(openai_api_key="...", temperature=0, model='gpt-3.5-turbo')
+  messages = [
+  SystemMessage(content="You are a helpful assistant."),
+  HumanMessage(content="Hi AI, how are you today?"),
+  AIMessage(content="I'm great thank you. How can I help you?"),
+  HumanMessage(content="I'd like to understand string theory.")
+  ]
+  # HumanMessage 表示用户输入的消息，AIMessage 表示系统回复用户的消息，SystemMessage 表示设置的 AI 应该遵循的目标，ChatMessage 表示任务角色的消息
+  res = chat(messages)
+  print(res.content)
+  ```
+- Output Parsers
+  部分的目标是辅助开发者从大语言模型输出中获取比仅文本更结构化的信息。
+  ```
+  from langchain.prompts import PromptTemplate, ChatPromptTemplate, HumanMessagePromptTemplate
+  from langchain.llms import OpenAI
+  from langchain.chat_models import ChatOpenAI
+  from langchain.output_parsers import PydanticOutputParser
+  from pydantic import BaseModel, Field, validator
+  from typing import List
+  model_name = 'text-davinci-003'
+  temperature = 0.0
+  model = OpenAI(model_name=model_name, temperature=temperature)
+  # Define your desired data structure.
+  class Joke(BaseModel):
+  setup: str = Field(description="question to set up a joke")
+  punchline: str = Field(description="answer to resolve the joke")
+  # You can add custom validation logic easily with Pydantic.
+  @validator('setup')
+  def question_ends_with_question_mark(cls, field):
+  if field[-1] != '?':
+  raise ValueError("Badly formed question!")
+  return field
+  # Set up a parser + inject instructions into the prompt template.
+  parser = PydanticOutputParser(pydantic_object=Joke)
+  prompt = PromptTemplate(
+  template="Answer the user query.\n{format_instructions}\n{query}\n",
+  input_variables=["query"],
+  partial_variables={"format_instructions": parser.get_format_instructions()}
+  )
+  # And a query intended to prompt a language model to populate the data structure.
+  joke_query = "Tell me a joke."
+  _input = prompt.format_prompt(query=joke_query)
+  output = model(_input.to_string())
+  parser.parse(output)
+  # Joke(setup='Why did the chicken cross the road?', punchline='To get to the other side!')
+  ```
+
+##### 5.1.3 Data connection
+![langchain-1](./pic/5/langchain-1.jpg "langchain-1")
+Data connection模块提供组件来加载、转换、存储和查询数据, 主要包括：Document loaders、Document transformers、Text embedding models、Vector stores 以及 Retrievers。
+- Document loaders：
+  ```
+  from langchain.document_loaders import TextLoader
+  loader = TextLoader("./index.md")
+  loader.load()
+
+  # PDF
+  from langchain.document_loaders import PyPDFLoader 
+  loader = PyPDFLoader("example_data/layout-parser-paper.pdf")
+  pages = loader.load_and_split()
+  ```
+- Document transformers:
+  处理文档, 以完成各种转换任务, 拆分、合并等
+  ```
+  from langchain.text_splitter import CharacterTextSplitter
+  text_splitter = CharacterTextSplitter.from_huggingface_tokenizer(tokenizer, chunk_size=100, chunk_overlap=0)
+  texts = text_splitter.split_text(state_of_the_union)
+  ```
+
+- Text embedding models: 将非结构化文本转换为嵌入表示。提供两个方法，一个用于文档嵌入表示，另一个用于查询嵌入表示。
+  ```
+  from langchain.embeddings import OpenAIEmbeddings
+  embeddings_model = OpenAIEmbeddings(openai_api_key="...")
+  embeddings = embeddings_model.embed_documents([
+  "Hi there!",
+  "Oh, hello!",
+  "What's your name?",
+  "My friends call me World",
+  "Hello World!"
+  ])
+  # len(embeddings), len(embeddings[0])
+  embedded_query = embeddings_model.embed_query("What was the name mentioned in this session?")
+  # embedded_query[:5]
+  ```
+- Vector stores：是存储和检索非结构化数据的主要方式之一。它首先将数据转化为嵌入表示，然后存储这些生成的嵌入向量
+  ```
+  # exampe1:
+  from langchain.embeddings import HuggingFaceEmbeddings
+  from langchain.vectorstores import Annoy
+  embeddings_func = HuggingFaceEmbeddings()
+  texts = ["pizza is great", "I love salad", "my car", "a dog"]
+  # default metric is angular
+  vector_store = Annoy.from_texts(texts, embeddings_func)
+  vector_store_v2 = Annoy.from_texts(
+    texts, embeddings_func, metric="dot", n_trees=100, n_jobs=1
+  )
+  vector_store.similarity_search("food", k=3)
+  # output
+  [(Document(page_content='pizza is great', metadata={}), 1.0944390296936035),
+  (Document(page_content='I love salad', metadata={}), 1.1273186206817627),
+  (Document(page_content='my car', metadata={}), 1.1580758094787598)]
+
+  # example2:
+  from langchain.document_loaders import TextLoader
+  from langchain.embeddings.openai import OpenAIEmbeddings
+  from langchain.text_splitter import CharacterTextSplitter
+  from langchain.vectorstores import FAISS
+  # Load the document, split it into chunks, embed each chunk and load it into the vector store.
+  raw_documents = TextLoader('../../../state_of_the_union.txt').load()
+  text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+  documents = text_splitter.split_documents(raw_documents)
+  db = FAISS.from_documents(documents, OpenAIEmbeddings())
+  # Do Simiarity Search
+  query = "What did the president say about Ketanji Brown Jackson"
+  docs = db.similarity_search(query)
+  print(docs[0].page_content)
+  ```
+- Retrievers: 其功能是基于非结构化查询返回相应的文档。检索器不需要存储文档，只需要能根据查询返回结果即可。
+  ```
+  from abc import ABC, abstractmethod
+  from typing import Any, List
+  from langchain.schema import Document
+  from langchain.callbacks.manager import Callbacks
+  class BaseRetriever(ABC):
+    def get_relevant_documents(self, query: str, *, callbacks: Callbacks = None, **kwargs: Any
+    ) -> List[Document]:
+      """Retrieve documents relevant to a query.
+      Args:
+      query: string to find relevant documents for
+      callbacks: Callback manager or list of callbacks
+      Returns:
+      List of relevant documents
+      """
+    async def aget_relevant_documents(self, query: str, *, callbacks: Callbacks = None, **kwargs: Any
+    ) -> List[Document]:
+      """Asynchronously get documents relevant to a query.
+      Args:
+      query: string to find relevant documents for
+      callbacks: Callback manager or list of callbacks
+      Returns:
+      List of relevant documents
+      """
+  from langchain.document_loaders import TextLoader
+  loader = TextLoader('../../../state_of_the_union.txt')
+  from langchain.text_splitter import CharacterTextSplitter
+  from langchain.vectorstores import FAISS
+  from langchain.embeddings import OpenAIEmbeddings
+  documents = loader.load()
+  text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+  texts = text_splitter.split_documents(documents)
+  embeddings = OpenAIEmbeddings()
+  db = FAISS.from_documents(texts, embeddings)
+  retriever = db.as_retriever()
+  docs = retriever.get_relevant_documents("what did he say about ketanji brown jackson")
+  ```
+
+##### 5.1.4 Chain
+应对大语言模型进行链式组合，或与其他组件进行链式调用，LangChain提供了Chain 接口。 LangChain 中链 LLMChain, RouterChain、SimpleSequentialChain、 SequentialChain、TransformChain等
+  ```
+  # example 1　LLM Chain
+  from langchain.chat_models import ChatOpenAI
+  from langchain.prompts.chat import ChatPromptTemplate, HumanMessagePromptTemplate
+  human_message_prompt = HumanMessagePromptTemplate(
+  prompt=PromptTemplate(
+    template="What is a good name for a company that makes {product}?",
+    input_variables=["product"],)
+  )
+  chat_prompt_template = ChatPromptTemplate.from_messages([human_message_prompt])
+  chat = ChatOpenAI(temperature=0.9)
+  chain = LLMChain(llm=chat, prompt=chat_prompt_template)
+  print(chain.run("colorful socks"))
+
+  # example 2 SimpleSequentialChain　
+  from langchain.llms import OpenAI
+  from langchain.chains import LLMChain
+  from langchain.prompts import PromptTemplate
+  # This is an LLMChain to write a synopsis given a title of a play.
+  llm = OpenAI(temperature=.7)
+  template = """You are a playwright. Given the title of play, it is your
+  job to write a synopsis for that title.
+  Title: {title}
+  Playwright: This is a synopsis for the above play:"""
+  prompt_template = PromptTemplate(input_variables=["title"], template=template)
+  synopsis_chain = LLMChain(llm=llm, prompt=prompt_template)
+  # This is an LLMChain to write a review of a play given a synopsis.
+  llm = OpenAI(temperature=.7)
+  template = """You are a play critic from the New York Times. Given the synopsis of play,
+  it is your job to write a review for that play.
+  Play Synopsis:
+  {synopsis}
+  Review from a New York Times play critic of the above play:"""
+  prompt_template = PromptTemplate(input_variables=["synopsis"], template=template)
+  review_chain = LLMChain(llm=llm, prompt=prompt_template)
+  # This is the overall chain where we run these two chains in sequence.
+  from langchain.chains import SimpleSequentialChain
+  overall_chain = SimpleSequentialChain(chains=[synopsis_chain, review_chain], verbose=True)
+  ```
+
+##### 5.1.4 Memory
+LangChain提供了管理和操作以前的聊天消息的辅助工具。大多数大语言模型应用都使用对话方式与用户交互。对话中的一个关键环节是能够引用和参考之前在对话中的信息。对于对话系统来说，最基础的要求是能够直接访问一些过去的消息。
+![langchain-2](./pic/5/langchain-2.jpg "langchain-2")
+  ```
+  # example 1
+  from langchain.memory import ConversationBufferMemory
+  from langchain.schema import messages_from_dict, messages_to_dict
+  history = ChatMessageHistory()
+  history.add_user_message("hi!")
+  history.add_ai_message("whats up?")
+  dicts = messages_to_dict(history.messages)
+
+  # example 2
+  from langchain.chat_models import ChatOpenAI
+  from langchain.schema import SystemMessage
+  from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder
+  prompt = ChatPromptTemplate.from_messages([
+  SystemMessage(content="You are a chatbot having a conversation with a human."),
+  MessagesPlaceholder(variable_name="chat_history"), # Where the memory will be stored.
+  HumanMessagePromptTemplate.from_template("{human_input}"), # Where the human input will injectd
+  ])
+  memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+  llm = ChatOpenAI()
+  chat_llm_chain = LLMChain(llm=llm, prompt=prompt, verbose=True, memory=memory,)
+  chat_llm_chain.predict(human_input="Hi there my friend")
+
+  # result1:
+  """
+  Entering new LLMChain chain...
+  Prompt after formatting:
+  System: You are a chatbot having a conversation with a human.
+  Human: Hi there my friend
+  > Finished chain.
+  'Hello! How can I assist you today, my friend?'
+  """
+  # result 2, 对话的历史记录都通过记忆传递给了 ChatModel
+  chat_llm_chain.predict(human_input="Not too bad - how are you?")
+  """
+  Entering new LLMChain chain...
+  Prompt after formatting:
+  System: You are a chatbot having a conversation with a human.
+  Human: Hi there my friend
+  AI: Hello! How can I assist you today, my friend?
+  Human: Not too bad - how are you?
+  > Finished chain.
+  "I'm an AI chatbot, so I don't have feelings, but I'm here to help and chat with you! Is there
+  something specific you would like to talk about or any questions I can assist you with?"
+  """
+  ```
+
+##### 5.1.5 Agents
+  核心思想是使用大语言模型来选择要执行的一系列动作。智能体通过将大语言模型与动作列表结合，自动地选择最佳的动作序列，从而实现自动化决策和行动。
+- Agent：是负责决定下一步该采取什么步骤的类。由大语言模型和提示驱动
+- Tools：是智能体调用的函数。这里有两个重要的考虑因素：1）为智能体提供正确的工具访问权限；2）用对智能体最有帮助的方式描述工具。
+- Toolkits：是一组旨在一起使用以完成特定任务的工具集合，并具有方便的加载方法。通常一个工具集中有 3-5 个工具。
+- AgentExecutor：是智能体的运行空间，这是实际调用智能体并执行其选择的操作的部分。除了 AgentExecutor 类外，LangChain 还支持其他智能体运行空间，包括 Plan-and-execute Agent、Baby AGI、Auto GPT 等。
+
+```
+from langchain.agents import Tool
+from langchain.agents import AgentType
+from langchain.memory import ConversationBufferMemory
+from langchain.chat_models import ChatOpenAI
+from langchain.utilities import SerpAPIWrapper
+from langchain.agents import initialize_agent
+search = SerpAPIWrapper()
+tools = [
+    Tool(name = "Current Search", func=search.run, description="useful for when you need to answer questions about current events or the current state of the world"),
+  ]
+memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, temperature=0)
+agent_chain = initialize_agent(tools, llm, agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION, verbose=True, memory=memory)
+agent_chain.run(input="what's my name?")
+agent_chain.run(input="whats the weather like in pomfret?")
+```
+
+##### 5.1.6 Callbacks
+
+##### 5.1.7 知识库问答系统
+  - 收集领域知识数据构造知识库，这些数据应当能够尽可能的全面覆盖问答需求
+  - 将知识库中的对非结构数据进行文本提取和文本拆分，得到文本块
+  - 利用嵌入向量表示模型给出文本块嵌入表示，并利用向量数据库进行保存
+  - 根据用户输入信息的嵌入表示，通过向量数据库检索得到最相关文本片段，利用提示词模板与用户输入以及历史消息合并输入大语言模型
+  - 将大语言模型结果返回用户
+  ```
+  from langchain.document_loaders import DirectoryLoader
+  from langchain.embeddings.openai import OpenAIEmbeddings
+  from langchain.text_splitter import CharacterTextSplitter
+  from langchain.vectorstores import Chroma
+  from langchain.chains import ChatVectorDBChain, ConversationalRetrievalChain
+  from langchain.chat_models import ChatOpenAI
+  from langchain.chains import RetrievalQA
+  # 从本地读取相关数据
+  loader = DirectoryLoader('./Langchain/KnowledgeBase/', glob='**/*.pdf', show_progress=True)
+  docs = loader.load()
+  # 将文件进行切分
+  text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+  docs_split = text_splitter.split_documents(docs)
+  # 初始化 OpenAI Embeddings
+  embeddings = OpenAIEmbeddings()
+  # 将数据存入 Chroma 向量存储
+  vector_store = Chroma.from_documents(docs, embeddings)
+  # 初始化检索器，使用向量存储
+  retriever = vector_store.as_retriever()
+  system_template = """
+  Use the following pieces of context to answer the users question.
+  If you don't know the answer, just say that you don't know, don't try to make up an answer.
+  Answering these questions in Chinese.
+  -----------
+  {question}
+  -----------
+  {chat_history}
+  """
+  # 构建初始 Messages 列表
+  messages = [
+  SystemMessagePromptTemplate.from_template(system_template),
+  HumanMessagePromptTemplate.from_template('{question}')
+  ]
+  # 初始化 Prompt 对象
+  prompt = ChatPromptTemplate.from_messages(messages)
+  # 初始化大语言模型，使用 OpenAI API
+  llm=ChatOpenAI(temperature=0.1, max_tokens=2048)
+  # 初始化问答链
+  qa = ConversationalRetrievalChain.from_llm(llm,retriever,condense_question_prompt=prompt)
+  chat_history = []
+  while True:
+    question = input('问题：')
+    # 开始发送问题 chat_history 为必须参数, 用于存储对话历史
+    result = qa({'question': question, 'chat_history': chat_history})
+    chat_history.append((question, result['answer']))
+    print(result['answer'])
+  ```
+#### 5.2 LangChain-ChatGLM
 
 ### 6 NLP 任务
 #### 6.1 意图识别
