@@ -16,10 +16,10 @@
     - [2.2.9 LLaMA](#229-llama)
   - [2.3 有监督微调](#23-有监督微调)
     - [2.3.1 BitFit](#231-bitfit)
-    - [2.3.2 Prompt-Tuning](#232-prompt-tuning)
-    - [2.3.3 P-Tuning](#233-p-tuning)
-    - [2.3.4 Prefix-Tuning](#234-prefix-tuning)
-    - [2.3.5 Lora](#235-lora)
+    - [2.3.2 Prefix-Tuning](#232-prefix-tuning)
+    - [2.3.3 Prompt-Tuning](#233-prompt-tuning)
+    - [2.3.4 P-Tuning](#234-p-tuning)
+    - [2.3.5 LoRA](#235-lora)
     - [2.3.6 IA3](#236-ia3)
     - [2.3.7 Adapter](#237-adapter)
   - [2.4 强化学习](#24-强化学习)
@@ -336,81 +336,113 @@ https://github.com/facebookresearch/llama-recipes/
 	https://arxiv.org/pdf/2303.15647.pdf
 
 ##### 2.3.1 BitFit
+  ```
+  BitFit: Simple Parameter-efficient Fine-tuning for Transformer-based Masked Language-models
+  https://arxiv.org/pdf/2106.10199v2.pdf
+  ```
 
-	只调节神经网络的bias参数
+  只调节神经网络的bias参数
+  ```
+  num_param = 0
+  for name, param in model.named_parameters():
+      if "bias" not in name:
+          param.requires_grad = False
+      else:
+          num_param += param.numel()
+  num_param
+  ```
 
-![BitFit](./pic/2/2-3/bitfit.png "BitFit")
-
+##### 2.3.2 Prefix-Tuning
 论文：
 
-	BitFit: Simple Parameter-efficient Fine-tuning for Transformer-based Masked Language-models
-	https://arxiv.org/pdf/2106.10199v2.pdf
+	Prefix-Tuning: Optimizing Continuous Prompts for Generation
+	https://arxiv.org/pdf/2101.00190.pdf
 
+![prefix](./pic/2/2-3/prefix.jpg "prefix")
 
-##### 2.3.2 Prompt-Tuning
+keeps language model parameters frozen, but optimizes a small continuous task-specific vector (called the prefix).
 
-![BitFit](./pic/2/2-3/prompt-tuning.png "BitFit")
+- autoregressive LM: $[Prefix; x]$
+- encode-decode: $[Prefix; x; {Prefix}^,; y]$
 
-论文：
+  ```
+  from peft import PrefixTuningConfig, get_peft_model, TaskType
+  config = PrefixTuningConfig(task_type=TaskType.CAUSAL_LM, num_virtual_tokens=10, prefix_projection=True)
+  model = get_peft_model(model, config)
+  ```
 
-	The Power of Scale for Parameter-Efficient Prompt Tuning
-	https://arxiv.org/pdf/2104.08691.pdf
+##### 2.3.3 Prompt-Tuning
+```
+The Power of Scale for Parameter-Efficient Prompt Tuning
+https://arxiv.org/pdf/2104.08691.pdf
+```
 
-算法原理：
+![prompt-tuning](./pic/2/2-3/prompt-tuning.png "prompt-tuning")
+
 
 $$ \hat{Y}=argmax_YPr_{\theta, {\theta}_p}(Y|[P;X]) $$
-
 - ${\theta}$  model parameters, ${\theta_p}$ prompt 参数
-
 - $Y$ output, a sequence of tokens
-
 - $X$ input, a sequence of tokens
-
 - $P$ prompt, a series of tokens prepended to the input 
 
-当输入是$n$ 个tokens, 表示为${x_1, x_2,...,x_n}$, 模型会将这些input通过embedding层转换为一个矩阵$X_e \in R^{n \times e}$, 这里的$e$ 是embedding space 维度。同时, $P_e \in R^{p \times e}$, 这里的$p$ 是prompt的长度。将两者拼接起来，得到$[P_e;X_e] \in R^{(p+n)\times e}$。训练时，只更新$\theta_p$.
+
+当输入是$n$ 个tokens, 表示为${x_1, x_2,...,x_n}$, 模型会将这些input通过embedding层转换为一个矩阵$X_e \in R^{n \times e}$, 这里的$e$ 是embedding space 维度。同时, $P_e \in R^{p \times e}$, 这里的$p$ 是prompt的长度。将两者拼接起来，得到$[P_e;X_e] \in R^{(p+n)\times e}$。训练时，只更新$\theta_p$. Prefix Tuning的简化版本
 
 Design Decision:
 - random
 - embedding from model's vocabulary
 - embeddings that enumerate the output classes
 
+  ```
+  peft_config = PromptTuningConfig(
+      task_type=TaskType.CAUSAL_LM,
+      prompt_tuning_init=PromptTuningInit.TEXT,
+      num_virtual_tokens=8,
+      prompt_tuning_init_text="Classify if the tweet is a complaint or not:",
+      tokenizer_name_or_path=model_name_or_path,
+  )
+  ```
 
-##### 2.3.3 P-Tuning
-论文：
+##### 2.3.4 P-Tuning
+```
+GPT Understands, Too
+https://arxiv.org/pdf/2103.10385.pdf
+P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks
+https://arxiv.org/pdf/2110.07602.pdf
+```
+**P-Tuning v1**
+![prompt-tuning](./pic/2/2-3/p-tuning.jpg "prompt-tuning")
 
-	GPT Understands, Too
-	https://arxiv.org/pdf/2103.10385.pdf
-	P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks
-	https://arxiv.org/pdf/2110.07602.pdf
+Prompt Encoder：
+  - LSTM + MLP: mapping function f to map trainable embeddings to model inputs
 
-原理：
+```
+from peft import PromptEncoderConfig, TaskType, get_peft_model, PromptEncoderReparameterizationType
 
-##### 2.3.4 Prefix-Tuning
-论文：
+config = PromptEncoderConfig(task_type=TaskType.CAUSAL_LM, num_virtual_tokens=10,
+                             encoder_reparameterization_type=PromptEncoderReparameterizationType.MLP,
+                             encoder_dropout=0.1, encoder_num_layers=5, encoder_hidden_size=1024)
+```
+**P-Tuning v2**
+![prompt-tuning](./pic/2/2-3/p-tuning-v2.jpg "prompt-tuning")
+```
+peft_config = PrefixTuningConfig(task_type=TaskType.CAUSAL_LM, num_virtual_tokens=30)
+# creating model
+model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
+model = get_peft_model(model, peft_config)
+```
 
-	Prefix-Tuning: Optimizing Continuous Prompts for Generation
-	https://arxiv.org/pdf/2101.00190.pdf
-
-原理：
-
-![prefix](./pic/2/2-3/prefix.jpg "prefix")
-
-- autoregressive LM: $[Prefix; x]$
-- encode-decode: $[Prefix; x; {Prefix}^,; y]$
-
-
-##### 2.3.5 Lora
-
-  论文：
-
-	LORA: LOW-RANK ADAPTATION OF LARGE LANGUAGE MODELS
-	https://arxiv.org/pdf/2106.09685.pdf
-    AdaLoRA: ADAPTIVE BUDGET ALLOCATION FOR PARAMETEREFFICIENT FINE-TUNING
-    https://arxiv.org/pdf/2303.10512.pdf
-    https://github.com/QingruZhang/AdaLoRA
-    QLORA: Efficient Finetuning of Quantized LLMs
-    https://arxiv.org/pdf/2305.14314.pdf
+##### 2.3.5 LoRA
+```
+LORA: LOW-RANK ADAPTATION OF LARGE LANGUAGE MODELS
+https://arxiv.org/pdf/2106.09685.pdf
+  AdaLoRA: ADAPTIVE BUDGET ALLOCATION FOR PARAMETEREFFICIENT FINE-TUNING
+  https://arxiv.org/pdf/2303.10512.pdf
+  https://github.com/QingruZhang/AdaLoRA
+  QLORA: Efficient Finetuning of Quantized LLMs
+  https://arxiv.org/pdf/2305.14314.pdf
+```
 
 原理：
 - **lora**：
@@ -421,6 +453,38 @@ Design Decision:
    
 
 ![lora](./pic/2/2-3/lora.jpg "lora")
+
+  ```
+  from transformers import (AutoConfig, AutoModelForCausalLM, AutoTokenizer, HfArgumentParser, set_seed)
+  from peft import (TaskType, PeftModel, LoraConfig, get_peft_model)
+
+  config = AutoConfig.from_pretrained(
+        model_name_or_path,
+        cache_dir=cache_dir,
+        trust_remote_code=True
+    )
+  model = AutoModelForCausalLM.from_pretrained(
+        model_name_or_path,
+        config=config,
+        cache_dir=cache_dir,
+        load_in_8bit=training_args.bits == 8,
+        load_in_4bit=training_args.bits == 4,
+        device_map=device_map,
+        torch_dtype=torch_dtype,
+        trust_remote_code=True
+    )
+  lora_config = LoraConfig(
+      r=lora_r,
+      lora_alpha=lora_alpha,
+      target_modules=target_modules.split(','),
+      lora_dropout=lora_dropout,
+      bias="none",
+      inference_mode=False,
+      task_type=TaskType.CAUSAL_LM
+  )
+  model = get_peft_model(model, lora_config)
+
+  ```
 
 - **adalora**：
 
@@ -441,11 +505,57 @@ Design Decision:
    ![adalora3](./pic/2/2-3/adalora-3.jpg "adalora3")
 
 - **qlora**：
+  ```
+  QLORA: Efficient Finetuning of Quantized LLMs
+  https://arxiv.org/pdf/2305.14314.pdf
+  ```
 ![qlora](./pic/2/2-3/qlora.jpg "qlora")
+  - 4-bit NormalFloat
+  - Double Quantization
+  - Paged Optimizers
+
+  ```
+  # https://huggingface.co/blog/4bit-transformers-bitsandbytes
+  from transformers import BitsAndBytesConfig
+  nf4_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_use_double_quant=True,
+    bnb_4bit_compute_dtype=torch.bfloat16
+  )
+  model_nf4 = AutoModelForCausalLM.from_pretrained(model_id, quantization_config=nf4_config)
+  modules = find_all_linear_names(model, training_args.bits)
+  lora_config = LoraConfig(
+      r=training_args.lora_r,
+      lora_alpha=training_args.lora_alpha,
+      target_modules=modules,
+      lora_dropout=training_args.lora_dropout,
+      bias="none",
+      inference_mode=False,
+      task_type=TaskType.CAUSAL_LM
+  )
+  model = get_peft_model(model_nf4, lora_config)
+  ```
 
 ##### 2.3.6 IA3
 	Few-Shot Parameter-Efficient Fine-Tuning is Better and Cheaper than In-Context Learning
 	https://arxiv.org/pdf/2205.05638.pdf
+![ia3](./pic/2/2-3/ia3.jpg "ia3")
+  - 对别LoRA更少的参数
+  - 不增加推理耗时
+  $$
+  softmax(\frac{Q(l_k \odot K^T)}{\sqrt{d}})(l_v \odot V)
+  $$
+
+  $$
+  (l_{ff} \odot \gamma (W_1r))W_2
+  $$
+
+  ```
+  from peft import IA3Config, TaskType, get_peft_model
+  config = IA3Config(task_type=TaskType.CAUSAL_LM)
+  model = get_peft_model(model, config)
+  ```
 
 ##### 2.3.7 Adapter
 
@@ -470,8 +580,7 @@ Design Decision:
   ![adapterfusion-mta](./pic/2/2-3/adapterfusion-mta.jpg "adapterfusion-mta")
   ![adapterfusion-stage2](./pic/2/2-3/adapterfusion-stage2.jpg "adapterfusion-stage2")
   ![adapterfusion-stage2-2](./pic/2/2-3/adapterfusion-stage2-2.jpg "adapterfusion-satge2-2")
-  
-- **MAD-X**
+
 
 
 #### 2.4 强化学习
