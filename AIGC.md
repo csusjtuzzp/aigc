@@ -1,6 +1,7 @@
 
 
 ### 目录
+
 - [目录](#目录)
 - [2 大模型基础](#2-大模型基础)
   - [2.1 构建框架](#21-构建框架)
@@ -46,6 +47,7 @@
     - [4.5.1 ZeRO](#451-zero)
     - [4.5.2 DeepSpeed-Chat](#452-deepspeed-chat)
     - [4.5.3 DeepSpeed-VisualChat](#453-deepspeed-visualchat)
+  - [4.6 Megatron-DeepSpeed](#46-megatron-deepspeed)
   - [4.6 模型推理](#46-模型推理)
     - [4.6.1 vLLM](#461-vllm)
 - [5 大模型应用框架](#5-大模型应用框架)
@@ -141,11 +143,10 @@
   	![instructgpt](./pic/2/2-2/instructgpt-3.jpg "instructgpt")
 
 ##### 2.2.5 BART
-
-    BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension
-    https://arxiv.org/pdf/1910.13461.pdf
-
-
+```
+  BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension
+  https://arxiv.org/pdf/1910.13461.pdf
+```
   ![BART1](./pic/2/2-2/bart.jpg "BART1") 
 
 - Pre-training:
@@ -615,23 +616,142 @@ https://github.com/huggingface/trl/blob/main/examples/scripts/ppo.py
 #### 3.2 多模态模型
 
 ##### 3.2.1 ViT
-    An image is worth 16x16 words: Transformers for image recognition at scale
-    https://arxiv.org/pdf/2010.11929.pdf
+```
+  An image is worth 16x16 words: Transformers for image recognition at scale
+  https://arxiv.org/pdf/2010.11929.pdf
+```
 ![vit](./pic/3/3-2/vit.jpg "vit")
 
+  ```
+  # https://huggingface.co/docs/transformers/model_doc/vit
+  from transformers import ViTConfig, ViTModel, ViTFeatureExtractor
+  configuration = ViTConfig()
+  model = ViTModel(configuration)
+
+  model_ckpt = 'google/vit-base-patch16-224-in21k'
+  device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+  extractor = ViTFeatureExtractor.from_pretrained(model_ckpt)
+  extractor(samples[0]['image'], return_tensors='pt')
+  ```
+
 ##### 3.2.2 CLIP
-    Learning Transferable Visual Models From Natural Language Supervision
-    https://arxiv.org/pdf/2103.00020.pdf
+```
+Learning Transferable Visual Models From Natural Language Supervision
+https://arxiv.org/pdf/2103.00020.pdf
+```
 ![clip](./pic/3/3-2/clip.jpg "clip")
 
+  ```
+  # https://huggingface.co/docs/transformers/model_doc/clip
+  from PIL import Image
+  from transformers import CLIPProcessor, CLIPModel
+  model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+  processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+  url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+  image = Image.open(requests.get(url, stream=True).raw)
+  inputs = processor(text=["a photo of a cat", "a photo of a dog"], images=image, return_tensors="pt", padding=True)
+  outputs = model(**inputs)
+  logits_per_image = outputs.logits_per_image
+  probs = logits_per_image.softmax(dim=1)
+
+  # Chinese CLIP
+  # https://arxiv.org/pdf/2211.01335.pdf
+  # https://huggingface.co/docs/transformers/model_doc/chinese_clip
+  from transformers import ChineseCLIPProcessor, ChineseCLIPModel
+  model = ChineseCLIPModel.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16")
+  processor = ChineseCLIPProcessor.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16")
+  url = "https://clip-cn-beijing.oss-cn-beijing.aliyuncs.com/pokemon.jpeg"
+  image = Image.open(requests.get(url, stream=True).raw)
+  # Squirtle, Bulbasaur, Charmander, Pikachu in English
+  texts = ["杰尼龟", "妙蛙种子", "小火龙", "皮卡丘"]
+  # compute image feature
+  inputs = processor(images=image, return_tensors="pt")
+  image_features = model.get_image_features(**inputs)
+  image_features = image_features / image_features.norm(p=2, dim=-1, keepdim=True)  # normalize
+  # compute text features
+  inputs = processor(text=texts, padding=True, return_tensors="pt")
+  text_features = model.get_text_features(**inputs)
+  text_features = text_features / text_features.norm(p=2, dim=-1, keepdim=True)  # normalize
+  # compute image-text similarity scores
+  inputs = processor(text=texts, images=image, return_tensors="pt", padding=True)
+  outputs = model(**inputs)
+  logits_per_image = outputs.logits_per_image  # this is the image-text similarity score
+  probs = logits_per_image.softmax(dim=1)  # 
+  ```
+
 ##### 3.2.3 Stable Diffusion
-    High-Resolution Image Synthesis with Latent Diffusion Models
-    https://arxiv.org/pdf/2112.10752.pdf
+```
+Understanding Diffusion Models: A Unified Perspective
+https://arxiv.org/pdf/2208.11970.pdf
+Denoising Diffusion Probabilistic Models
+https://arxiv.org/pdf/2006.11239.pdf
+High-Resolution Image Synthesis with Latent Diffusion Models
+https://arxiv.org/pdf/2112.10752.pdf
+# https://github.com/AUTOMATIC1111/stable-diffusion-webui
+# https://github.com/CompVis/stable-diffusion
+# https://github.com/Stability-AI/stablediffusion
+```
+**马尔科夫分层自编码器（MHVAE）**
+![diffusion_hvae](./pic/3/3-2/diffusion_hvae.png "diffusion_hvae")
+编码过程：
+$$
+q_{\phi}(z_{1:T}|x) = q_{\phi}(z_{1}|x) \prod_{t=2}^T q_{\phi}(z_{t}|z_{t-1})
+$$
+解码过程
+$$
+p(x,z_{1:T}) = p(z_T) p_{\theta}(x|z_1) \prod_{t=2}^T p_{\theta}(z_{t-1}|z_t)
+$$
+**扩散模型**
+![diffusion_hvae](./pic/3/3-2/diffusion_2.png "diffusion_hvae")
+前向过程：
+$$
+q(x_{1:T}|x_0) = q(x_1|x_0) \prod_{t=2}^T q(x_t|x_{t-1}) =  \prod_{t=1}^T q(x_t|x_{t-1})
+$$
+每一个$x_t$都是一个高斯变量，前向过程每一个步骤的编码器$q(x_t|x_{t-1})$固定为一个线性高斯变换， 所谓线性高斯变换是指$x_t$的均值和$x_{t-1}$的值是线性关系。 定义$q(x_t|x_{t-1})$的方差与$x_{t-1}$独立, 为$\beta_tI$(超参), 并且
+$$0 \lt \beta_1 \lt \beta_2 \lt \dots \beta_T \lt 1$$
+前期方差较小，添加的噪声少，扩散速度慢；随着方差逐步加大，添加的噪声越来越多，扩散的速度加快。
+定义$q(x_t|x_{t-1})$的均值$\mu_{x_t}$和$x_{t-1}$是线性关系, 设定另外一个参数$\alpha_t = 1 - \beta_t $:
+$$
+\mu_{x_t} =  \sqrt{\alpha_t} \ x_{t-1}
+$$
+
+$$
+\Sigma_{x_t} = \beta_t \textit{I} =  (1- \alpha_t ) \textit{I}
+$$
+$q(x_t|x_{t-1})$就是一个以$\sqrt{\alpha_t} \ x_{t-1}$为均值， 以$(1- \alpha_t ) \textit{I}$ 为方差的高斯分布。 按照线性高斯的特征，它可以看做是$\sqrt{\alpha_t} \ x_{t-1}$在基础上加上一个$\mathcal{N} (0, (1- \alpha_t ) \textit{I} )$的随机高斯噪声。 这就相当于每一个步骤都在前一个步骤的基础上加上一个随机高斯噪声数据，随着的增加，逐步变成一个高斯噪声数据。
+$$
+q(x_t|x_{t-1}) = \mathcal{N} (\sqrt{\alpha_t} \ x_{t-1}, (1- \alpha_t ) \textit{I} )
+$$
+$$
+\begin{aligned}
+x_{t} &=\sqrt{\alpha_t} \ x_{t-1} + \mathcal{N} (0, (1- \alpha_t ) \textit{I} )\\&=\sqrt{\alpha_t} \ x_{t-1} +  \sqrt{1- \alpha_t } \ \epsilon \ \ \ ,\epsilon \sim \mathcal{N} (0, \textit{I} )
+\end{aligned}
+$$
+
+后向过程：
+$$
+p(x_{0:T}) = p(x_T) \prod_{t={T-1}}^0 p(x_{t}|x_{t+1})
+$$
+
+其中$ p(x_T) $ 是标准正态分布，即$ p(x_T) \sim \mathcal{N} (0, \textit{I} )$。使用神经网络进行学习。
+
 ![stable-diffusion](./pic/3/3-2/stable-diffusion.jpg "stable-diffusion")
+```
+from diffusers import StableDiffusionPipeline
+import torch
+model_id = "runwayml/stable-diffusion-v1-5"
+pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
+pipe = pipe.to("cuda")
+prompt = "a photo of an astronaut riding a horse on mars"
+image = pipe(prompt).images[0]  
+image.save("astronaut_rides_horse.png")
+```
 
 ##### 3.2.3 ControlNet
-    Adding Conditional Control to Text-to-Image Diffusion Models
-    https://arxiv.org/pdf/2302.05543.pdf
+```
+Adding Conditional Control to Text-to-Image Diffusion Models
+https://arxiv.org/pdf/2302.05543.pdf
+```
 ![ControlNet-1](./pic/3/3-2/controlnet.jpg "ControlNet-1")
 ![ControlNet-1](./pic/3/3-2/controlnet-1.jpg "ControlNet-1")
 ![ControlNet-1](./pic/3/3-2/controlnet-2.jpg "ControlNet-1") 
@@ -780,6 +900,11 @@ attn_output = xops.memory_efficient_attention(
 project/deepspeed/DeepSpeed-Chat
 ##### 4.5.3 DeepSpeed-VisualChat
 project/deepspeed/DeepSpeed-VisualChat
+
+#### 4.6 Megatron-DeepSpeed
+```
+https://github.com/microsoft/Megatron-DeepSpeed/tree/main
+```
 
 #### 4.6 模型推理
 ##### 4.6.1 vLLM
