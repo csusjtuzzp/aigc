@@ -1,7 +1,6 @@
 
 
 ### 目录
-
 - [目录](#目录)
 - [2 大模型基础](#2-大模型基础)
   - [2.1 构建框架](#21-构建框架)
@@ -28,13 +27,20 @@
     - [2.4.2 RLHF](#242-rlhf)
 - [3 多模态](#3-多模态)
   - [3.1 数据](#31-数据)
-  - [3.2 多模态模型](#32-多模态模型)
+  - [3.2 视觉模型](#32-视觉模型)
     - [3.2.1 ViT](#321-vit)
     - [3.2.2 CLIP](#322-clip)
-    - [3.2.3 Stable Diffusion](#323-stable-diffusion)
+    - [3.2.3 Diffusion Probabilistic Model](#323-diffusion-probabilistic-model)
+    - [3.2.4 Denoising Diffusion Probabilistic Model](#324-denoising-diffusion-probabilistic-model)
+    - [3.2.5 Denoising Diffusion Implicit Model](#325-denoising-diffusion-implicit-model)
+    - [3.2.6 Stable Diffusion](#326-stable-diffusion)
     - [3.2.3 ControlNet](#323-controlnet)
     - [3.2.4 Imagen](#324-imagen)
     - [3.2.5 Dreambooth](#325-dreambooth)
+  - [3.3 多模态模型](#33-多模态模型)
+    - [3.3.1 Blip](#331-blip)
+    - [3.3.2 Blip-2](#332-blip-2)
+    - [3.3.3 Mini-GPT4](#333-mini-gpt4)
 - [4 分布式训练](#4-分布式训练)
   - [4.1 概述](#41-概述)
   - [4.2 并行策略](#42-并行策略)
@@ -65,6 +71,7 @@
   - [6.1 意图识别](#61-意图识别)
   - [6.2 文本匹配](#62-文本匹配)
   - [6.3 对话管理](#63-对话管理)
+
 
 ### 2 大模型基础
 
@@ -610,10 +617,9 @@ https://github.com/huggingface/trl/blob/main/examples/scripts/ppo.py
 ![rlhf](./pic/2/2-4/rlhf.jpg "rlhf")
 
 ### 3 多模态
-
 #### 3.1 数据
 
-#### 3.2 多模态模型
+#### 3.2 视觉模型
 
 ##### 3.2.1 ViT
 ```
@@ -678,19 +684,55 @@ https://arxiv.org/pdf/2103.00020.pdf
   logits_per_image = outputs.logits_per_image  # this is the image-text similarity score
   probs = logits_per_image.softmax(dim=1)  # 
   ```
-
-##### 3.2.3 Stable Diffusion
+##### 3.2.3 Diffusion Probabilistic Model
 ```
 Understanding Diffusion Models: A Unified Perspective
 https://arxiv.org/pdf/2208.11970.pdf
-Denoising Diffusion Probabilistic Models
-https://arxiv.org/pdf/2006.11239.pdf
-High-Resolution Image Synthesis with Latent Diffusion Models
-https://arxiv.org/pdf/2112.10752.pdf
-# https://github.com/AUTOMATIC1111/stable-diffusion-webui
-# https://github.com/CompVis/stable-diffusion
-# https://github.com/Stability-AI/stablediffusion
 ```
+**VAE**
+- **简介**：
+  ![vae](./pic/3/3-2/vae.jpg "vae")
+  ![vae-2](./pic/3/3-2/vae-2.jpg "vae-2")
+  从$X->Z$ 对应条件概率 $P(Z|X)$， 对应编码过程
+  从$Z->X$ 对应条件概率 $P(X|Z)$， 对应解码过程
+  其联合概率分布为：
+  $$
+  P(X,Z) = P(X)P(Z|X) = P(Z)P(X|Z)
+  $$
+  $$
+  P(Z|X) = \frac{P(Z)P(X|Z)}{P(X)}
+  $$
+
+  假定存在观察样本$\mathcal{D}=\{(z^{(1)},x^{(1)}),\cdots,(z^{(N)},x^{(N)})\}$
+  $$
+  \ell(\theta;\mathcal{D}) = \sum_{i=1}^{N} \ln p_{\theta}(z^{(i)},x^{(i)})
+  $$
+  但$z$为隐变量，当观测样本$\mathcal{D}=\{x^{(1)},\cdots,x^{(N)}\}$, 极大化下目标函数：
+  $$
+  \ell(\theta;\mathcal{D}) = \sum_{i=1}^{N} \ln p_{\theta}(x^{(i)})
+  = \sum_{i=1}^{N} \ln  \int_z p_{\theta}(x^{(i)},z) dz
+  $$
+- **ELBO(Evidence Lower Bound)**：
+  $$
+  \begin{aligned}\ell(\theta;x) &=  \ln  p_{\theta}(x)\\ &=  \ln \int_{z} p_{\theta}(x,z)\\&=  \ln \int_{z} q_{\phi}(z) \frac{p_{\theta}(x,z)}{q_{\phi}(z)}  \ \ \ \text{同时乘除} q_{\phi}(z) \text{，等于没变化}\\&=  \ln\mathbb{E}_{q_{\phi}(z) } \left [ \frac{p_{\theta}(x,z)}{q_{\phi}(z)} \right ]\\& \ge  \mathbb{E}_{q_{\phi}(z) } \ln\left [ \frac{p_{\theta}(x,z)}{q_{\phi}(z)} \right ]
+  \ \ \ \text{根据Jensen不等式}\\
+  &=  \int_{z} q_{\phi}(z) \ln \left [ \frac{p_{\theta}(x,z)}{q_{\phi}(z)} \right ]\\&=  \left [  \int_{z} q_{\phi}(z) \ln  p_{\theta}(x,z)
+    \int_{z} q_{\phi}(z) \ln q_{\phi}(z) \right ]\\&\triangleq \mathcal{L}(q,\theta)\end{aligned}
+  $$
+
+  下界函数：
+  $$
+  \begin{aligned}
+  \mathcal{L}(q,\theta) &= \int_{z} q_{\phi}(z)  \ln  p_{\theta}(x,z) -
+  \int_{z} q_{\phi}(z) \ln q_{\phi}(z) \\
+  &=   \mathbb{E}_{z \sim q_{\phi}} [ \ln  p_{\theta}(x,z) ] - \mathbb{E}_{z \sim q_{\phi}}[ \ln q_{\phi}(z) ]
+  \end{aligned}
+  $$
+  ![vae-3](./pic/3/3-2/vae-3.jpg "vae-3")
+  ![vae-4](./pic/3/3-2/vae-4.jpg "vae-4")
+  ![vae-5](./pic/3/3-2/vae-5.jpg "vae-5")
+
+
 **马尔科夫分层自编码器（MHVAE）**
 ![diffusion_hvae](./pic/3/3-2/diffusion_hvae.png "diffusion_hvae")
 编码过程：
@@ -702,6 +744,7 @@ $$
 p(x,z_{1:T}) = p(z_T) p_{\theta}(x|z_1) \prod_{t=2}^T p_{\theta}(z_{t-1}|z_t)
 $$
 **扩散模型**
+
 ![diffusion_hvae](./pic/3/3-2/diffusion_2.png "diffusion_hvae")
 前向过程：
 $$
@@ -735,6 +778,150 @@ $$
 
 其中$ p(x_T) $ 是标准正态分布，即$ p(x_T) \sim \mathcal{N} (0, \textit{I} )$。使用神经网络进行学习。
 
+目标函数：
+![elbo](./pic/3/3-2/diffu-1.jpg "elbo")
+![elbo](./pic/3/3-2/diffu-2.jpg "elbo")
+![elbo](./pic/3/3-2/diffu-2.jpg "elbo")
+- reconstruction term
+  $$
+  \begin{aligned}\ln p(x_0|x_1) &=\ln \frac{1}{(2\pi)^{n/2} |\Sigma |^{1/2}}exp\{-\frac{1}{2}(x_0 - \mu_{\theta}(x_1,t=1))^{T}\Sigma^{-1}(x - \mu_{\theta}(x_1,t=1))\}\\& \propto -\frac{1}{2}(x_0 - \mu_{\theta}(x_1,t=1))^{T}(x_0 - \mu_{\theta}(x_1,t=1))\}\\& = -\frac{1}{2} \left\lVert x_0 - \mu_{\theta}(x_1,t=1) \right\rVert_2^2\end{aligned}
+  $$
+
+  $$
+  \begin{aligned}& {\operatorname{\arg\max}}_{\theta}
+  \mathbb{E}_{q(x_{1}|x_0)}\left[\ln p_{{\theta}}(x_0|x_1)\right]\\&\Leftrightarrow  {\operatorname{\arg\max}}_{\theta} \  \mathbb{E}_{q(x_{1}|x_0)}
+  \left [ -\frac{1}{2} \left\lVert x_0 - \hat x_{0}(x_1,t=1) \right\rVert_2^2 \right ]\\&\Leftrightarrow   {\operatorname{\arg\min}}_{\theta} \  \mathbb{E}_{q(x_{1}|x_0)}
+  \left [ \left\lVert x_0 - \hat x_{0}(x_1,t=1) \right\rVert_2^2 \right ]\end{aligned}
+  $$
+
+- prior matching term
+  
+  KL 散度, $P(x_0|x_T)$ 是前向扩散阶段的后验概率分布。 $P(x_T)$是逆向生成过程中的先验分布。其约束是让两者尽可能的接近，起正则作用。其都没有包含未知参数，可以忽略。
+
+- denoising matching term
+  $$
+  \begin{split}\begin{align}
+  {q(x_{t-1}|x_t, x_0)}
+  &= {\frac{q(x_t | x_{t-1}, x_0)q(x_{t-1}|x_0)}{q(x_{t}|x_0)}}\\
+  &= {\frac{\mathcal{N}(x_{t} ; \sqrt{\alpha_t} x_{t-1}, (1 - \alpha_t)\textit{I})\mathcal{N}(x_{t-1} ; \sqrt{\bar\alpha_{t-1}}x_0, (1 - \bar\alpha_{t-1}) \textit{I})}{\mathcal{N}(x_{t} ; \sqrt{\bar\alpha_{t}}x_0, (1 - \bar\alpha_{t})\textit{I})}}\\
+  &\propto {\text{exp}\left\{-\left[\frac{(x_{t} - \sqrt{\alpha_t} x_{t-1})^2}{2(1 - \alpha_t)} + \frac{(x_{t-1} - \sqrt{\bar\alpha_{t-1}} x_0)^2}{2(1 - \bar\alpha_{t-1})} - \frac{(x_{t} - \sqrt{\bar\alpha_t} x_{0})^2}{2(1 - \bar\alpha_t)} \right]\right\}}\\
+  &= {\text{exp}\left\{-\frac{1}{2}\left[\frac{(x_{t} - \sqrt{\alpha_t} x_{t-1})^2}{1 - \alpha_t} + \frac{(x_{t-1} - \sqrt{\bar\alpha_{t-1}} x_0)^2}{1 - \bar\alpha_{t-1}} - \frac{(x_{t} - \sqrt{\bar\alpha_t} x_{0})^2}{1 - \bar\alpha_t} \right]\right\}}\\
+  &= {\text{exp}\left\{-\frac{1}{2}\left[\frac{(-2\sqrt{\alpha_t} x_{t}x_{t-1} + \alpha_t x_{t-1}^2)}{1 - \alpha_t} + \frac{(x_{t-1}^2 - 2\sqrt{\bar\alpha_{t-1}}x_{t-1} x_0)}{1 - \bar\alpha_{t-1}} + C(x_t, x_0)\right]\right\}} \\
+  &\propto {\text{exp}\left\{-\frac{1}{2}\left[- \frac{2\sqrt{\alpha_t} x_{t}x_{t-1}}{1 - \alpha_t} + \frac{\alpha_t x_{t-1}^2}{1 - \alpha_t} + \frac{x_{t-1}^2}{1 - \bar\alpha_{t-1}} - \frac{2\sqrt{\bar\alpha_{t-1}}x_{t-1} x_0}{1 - \bar\alpha_{t-1}}\right]\right\}}\\
+  &= {\text{exp}\left\{-\frac{1}{2}\left[(\frac{\alpha_t}{1 - \alpha_t} + \frac{1}{1 - \bar\alpha_{t-1}})x_{t-1}^2 - 2\left(\frac{\sqrt{\alpha_t}x_{t}}{1 - \alpha_t} + \frac{\sqrt{\bar\alpha_{t-1}}x_0}{1 - \bar\alpha_{t-1}}\right)x_{t-1}\right]\right\}}\\
+  &= {\text{exp}\left\{-\frac{1}{2}\left[\frac{\alpha_t(1-\bar\alpha_{t-1}) + 1 - \alpha_t}{(1 - \alpha_t)(1 - \bar\alpha_{t-1})}x_{t-1}^2 - 2\left(\frac{\sqrt{\alpha_t}x_{t}}{1 - \alpha_t} + \frac{\sqrt{\bar\alpha_{t-1}}x_0}{1 - \bar\alpha_{t-1}}\right)x_{t-1}\right]\right\}}\\
+  &= {\text{exp}\left\{-\frac{1}{2}\left[\frac{\alpha_t-\bar\alpha_{t} + 1 - \alpha_t}{(1 - \alpha_t)(1 - \bar\alpha_{t-1})}x_{t-1}^2 - 2\left(\frac{\sqrt{\alpha_t}x_{t}}{1 - \alpha_t} + \frac{\sqrt{\bar\alpha_{t-1}}x_0}{1 - \bar\alpha_{t-1}}\right)x_{t-1}\right]\right\}}\\
+  &= {\text{exp}\left\{-\frac{1}{2}\left[\frac{1 -\bar\alpha_{t}}{(1 - \alpha_t)(1 - \bar\alpha_{t-1})}x_{t-1}^2 - 2\left(\frac{\sqrt{\alpha_t}x_{t}}{1 - \alpha_t} + \frac{\sqrt{\bar\alpha_{t-1}}x_0}{1 - \bar\alpha_{t-1}}\right)x_{t-1}\right]\right\}}\\
+  &= {\text{exp}\left\{-\frac{1}{2}\left(\frac{1 -\bar\alpha_{t}}{(1 - \alpha_t)(1 - \bar\alpha_{t-1})}\right)\left[x_{t-1}^2 - 2\frac{\left(\frac{\sqrt{\alpha_t}x_{t}}{1 - \alpha_t} + \frac{\sqrt{\bar\alpha_{t-1}}x_0}{1 - \bar\alpha_{t-1}}\right)}{\frac{1 -\bar\alpha_{t}}{(1 - \alpha_t)(1 - \bar\alpha_{t-1})}}x_{t-1}\right]\right\}}\\
+  &= {\text{exp}\left\{-\frac{1}{2}\left(\frac{1 -\bar\alpha_{t}}{(1 - \alpha_t)(1 - \bar\alpha_{t-1})}\right)\left[x_{t-1}^2 - 2\frac{\left(\frac{\sqrt{\alpha_t}x_{t}}{1 - \alpha_t} + \frac{\sqrt{\bar\alpha_{t-1}}x_0}{1 - \bar\alpha_{t-1}}\right)(1 - \alpha_t)(1 - \bar\alpha_{t-1})}{1 -\bar\alpha_{t}}x_{t-1}\right]\right\}}\\
+  &= {\text{exp}\left\{-\frac{1}{2}\left(\frac{1}{\frac{(1 - \alpha_t)(1 - \bar\alpha_{t-1})}{1 -\bar\alpha_{t}}}\right)\left[x_{t-1}^2 - 2\frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})x_{t} + \sqrt{\bar\alpha_{t-1}}(1-\alpha_t)x_0}{1 -\bar\alpha_{t}}x_{t-1}\right]\right\}}\\
+  &\propto {\mathcal{N}(x_{t-1} ;} \underbrace{{\frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})x_{t} + \sqrt{\bar\alpha_{t-1}}(1-\alpha_t)x_0}{1 -\bar\alpha_{t}}}}_{\mu_q(x_t, x_0)}, \underbrace{{\frac{(1 - \alpha_t)(1 - \bar\alpha_{t-1})}{1 -\bar\alpha_{t}}\textit{I}}}_{{\Sigma}_q(t)})
+  \end{align}\end{split}
+  $$
+  其跟$x_{t-1}$无关，只跟$x_t, \alpha, x_0$有关。同样也是一个高斯分布，均值可以记为$\mu_q(x_t, x_0)$ 是一个有关$x_0, x_t$的函数。方差记作$\Sigma_q(t)$.
+  $$
+  \begin{aligned}\mu_q(x_t, x_0) &= { \frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})x_{t} + \sqrt{\bar\alpha_{t-1}}(1-\alpha_t)x_0}{1 -\bar\alpha_{t}}}\\\Sigma_q(t) &= \frac{(1 - \alpha_t)(1 - \bar\alpha_{t-1})}{ 1 -\bar\alpha_{t}}  \textit{I} = \sigma_q^2(t)   \textit{I}\end{aligned}
+  $$
+
+  参数化模型分布$p_\theta(x_{t-1}|x_t)$, 尽可能的接近高斯分布$q(x_{t-1}|x_t, x_0)$. 假定其为高斯分布，其均值记为$\mu_{\theta}$, $\Sigma_\theta$为其方差，其不用学习，令其$\Sigma_\theta=\Sigma_q(t)$。
+  $$
+  p_{\theta} (x_{t-1}|x_t) \sim \mathcal{N}(x_{t-1} ;\mu_{\theta},\Sigma_q(t))
+  $$
+
+  ![elbo](./pic/3/3-2/diffu-3.jpg "elbo")
+  极大化 ELBO 函数，等同于极小化$D_{KL}({q(x_{t-1}|x_t, x_0)}||{p_{{\theta}}(x_{t-1}|x_t)})$, 等同于极小化$\left[\left\lVert{\mu}_{{\theta}}-{\mu}_q\right\rVert_2^2\right]$.
+  其中：
+  $$
+  \mu_q(x_t, x_0) = { \frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})x_{t} + \sqrt{\bar\alpha_{t-1}}(1-\alpha_t)x_0}{1 -\bar\alpha_{t}}}
+  $$
+
+  $$
+  \mu_{\theta}={\mu}_{{\theta}}(x_t, t) = \frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})x_{t} + \sqrt{\bar\alpha_{t-1}}(1-\alpha_t)\hat x_{{\theta}}(x_t, t)}{1 -\bar\alpha_{t}}
+  $$
+
+  $$
+  \begin{aligned}& \quad \left\lVert{\mu}_{{\theta}}-{\mu}_q \right\rVert_2^2\\&= \left\lVert  \frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})x_{t} + \sqrt{\bar\alpha_{t-1}}(1-\alpha_t)\hat x_{{\theta}}(x_t, t)}{1 -\bar\alpha_{t}}
+  -{ \frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})x_{t} + \sqrt{\bar\alpha_{t-1}}(1-\alpha_t)x_0}{1 -\bar\alpha_{t}}}
+  \right\rVert_2^2\\&= \left\lVert  \frac{ \sqrt{\bar\alpha_{t-1}}(1-\alpha_t)\hat x_{{\theta}}(x_t, t)}{1 -\bar\alpha_{t}}
+  -{ \frac{\sqrt{\bar\alpha_{t-1}}(1-\alpha_t)x_0}{1 -\bar\alpha_{t}}}
+  \right\rVert_2^2\\&= \left\lVert  \frac{ \sqrt{\bar\alpha_{t-1}}(1-\alpha_t) }  {1 -\bar\alpha_{t}}
+  ( \hat x_{{\theta}}(x_t, t)   -    x_0 )
+  \right\rVert_2^2\\&=  \frac{ \sqrt{\bar\alpha_{t-1}}(1-\alpha_t) }  {1 -\bar\alpha_{t}}
+  \left\lVert  ( \hat x_{{\theta}}(x_t, t) -  x_0 ) \right\rVert_2^2\end{aligned}
+  $$
+  ![elbo](./pic/3/3-2/diffu-4.jpg "elbo")
+
+最终目标函数：
+![elbo](./pic/3/3-2/diffu-5.jpg "elbo")
+采样过程：
+![elbo](./pic/3/3-2/diffu-6.jpg "elbo")
+
+
+##### 3.2.4 Denoising Diffusion Probabilistic Model
+```
+Denoising Diffusion Probabilistic Models
+https://arxiv.org/pdf/2006.11239.pdf
+```
+  $$
+  q(x_t|x_0) \sim \mathcal{N}(x_t; \sqrt{\bar{\alpha}_t } \ x_0,  (1- \bar{ \alpha}_t)    \textit{I})
+  $$
+
+  $$
+  x_t = \sqrt{\bar{\alpha}_t } \ x_0 + \sqrt{1- \bar{ \alpha}_t }  \ \epsilon_t  \ \ \ ,
+  \bar{\alpha}_t = \prod_{i=1}^t \alpha_i ,\ \ \epsilon_t \sim \mathcal{N}(0,\textit{I})
+  $$
+  反过来， 用$x_t$表示$x_0$
+  $$
+  x_0 =  \frac{x_t -\sqrt{1- \bar{ \alpha}_t }  \ \epsilon_t }{ \sqrt{\bar{\alpha}_t }  }
+  ,\ \ \epsilon_t \sim \mathcal{N}(0,\textit{I})
+  $$
+
+  $$
+  \begin{split}\begin{align}
+  {\mu}_q &= {\mu}_q(x_t, x_0) = \frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})x_{t} + \sqrt{\bar\alpha_{t-1}}(1-\alpha_t)x_0}{1 -\bar\alpha_{t}}\\
+  &= \frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})x_{t} + \sqrt{\bar\alpha_{t-1}}(1-\alpha_t)\frac{x_t - \sqrt{1 - \bar\alpha_t}\epsilon }{\sqrt{\bar\alpha_t}}}{1 -\bar\alpha_{t}}\\
+  &= \frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})x_{t} + (1-\alpha_t)\frac{x_t - \sqrt{1 - \bar\alpha_t}\epsilon }{\sqrt{\alpha_t}}}{1 -\bar\alpha_{t}}\\
+  &= \frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})x_{t}}{1 - \bar\alpha_t} + \frac{(1-\alpha_t)x_t}{(1-\bar\alpha_t)\sqrt{\alpha_t}} - \frac{(1 - \alpha_t)\sqrt{1 - \bar\alpha_t}\epsilon }{(1-\bar\alpha_t)\sqrt{\alpha_t}}\\
+  &= \left(\frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})}{1 - \bar\alpha_t} + \frac{1-\alpha_t}{(1-\bar\alpha_t)\sqrt{\alpha_t}}\right)x_t - \frac{(1 - \alpha_t)\sqrt{1 - \bar\alpha_t}}{(1-\bar\alpha_t)\sqrt{\alpha_t}}\epsilon \\
+  &= \left(\frac{\alpha_t(1-\bar\alpha_{t-1})}{(1 - \bar\alpha_t)\sqrt{\alpha_t}} + \frac{1-\alpha_t}{(1-\bar\alpha_t)\sqrt{\alpha_t}}\right)x_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar\alpha_t}\sqrt{\alpha_t}}\epsilon \\
+  &= \frac{\alpha_t-\bar\alpha_{t} + 1-\alpha_t}{(1 - \bar\alpha_t)\sqrt{\alpha_t}}x_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar\alpha_t}\sqrt{\alpha_t}}\epsilon \\
+  &= \frac{1-\bar\alpha_t}{(1 - \bar\alpha_t)\sqrt{\alpha_t}}x_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar\alpha_t}\sqrt{\alpha_t}}\epsilon \\
+  &= \frac{1}{\sqrt{\alpha_t}}x_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar\alpha_t}\sqrt{\alpha_t}}\epsilon
+  \end{align}\end{split}
+  $$
+  $$
+  \mu_{\theta}={\mu}_{{\theta}}(x_t, t) = \frac{1}{\sqrt{\alpha_t}}x_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar\alpha_t}\sqrt{\alpha_t}} {\hat\epsilon}_{ {\theta}}(x_t, t)
+  $$
+  $$
+  \begin{split}\begin{align}
+  &  D_{KL}({q(x_{t-1}|x_t, x_0)}||{p_{{\theta}}(x_{t-1}|x_t)}) \\
+  &=\frac{1}{2\sigma_q^2(t)}\left[\left\lVert{\mu}_{{\theta}}-{\mu}_q\right\rVert_2^2\right]\\
+  &= \frac{1}{2\sigma_q^2(t)}\left[\left\lVert\frac{1}{\sqrt{\alpha_t}}x_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar\alpha_t}\sqrt{\alpha_t}}{\hat\epsilon}_{{\theta}}(x_t, t) -
+  \frac{1}{\sqrt{\alpha_t}}x_t + \frac{1 - \alpha_t}{\sqrt{1 - \bar\alpha_t}\sqrt{\alpha_t}}\epsilon \right\rVert_2^2\right]\\
+  &= \frac{1}{2\sigma_q^2(t)}\left[\left\lVert \frac{1 - \alpha_t}{\sqrt{1 - \bar\alpha_t}\sqrt{\alpha_t}}\epsilon  - \frac{1 - \alpha_t}{\sqrt{1 - \bar\alpha_t}\sqrt{\alpha_t}}{\hat\epsilon}_{{\theta}}(x_t, t)\right\rVert_2^2\right]\\
+  &= \frac{1}{2\sigma_q^2(t)}\left[\left\lVert \frac{1 - \alpha_t}{\sqrt{1 - \bar\alpha_t}\sqrt{\alpha_t}}(\epsilon  - {\hat\epsilon}_{{\theta}}(x_t, t))\right\rVert_2^2\right]\\
+  &= \frac{1}{2\sigma_q^2(t)}\frac{(1 - \alpha_t)^2}{(1 - \bar\alpha_t)\alpha_t}\left[\left\lVert\epsilon  - {\hat\epsilon}_{{\theta}}(x_t, t)\right\rVert_2^2\right]
+  \end{align}\end{split}
+  $$
+![ddpm](./pic/3/3-2/ddpm-2.jpg "ddpm")
+![ddpm](./pic/3/3-2/ddpm-1.jpg "ddpm")
+
+##### 3.2.5 Denoising Diffusion Implicit Model
+```
+DENOISING DIFFUSION IMPLICIT MODELS
+https://arxiv.org/pdf/2010.02502.pdf
+```
+##### 3.2.6 Stable Diffusion
+```
+High-Resolution Image Synthesis with Latent Diffusion Models
+https://arxiv.org/pdf/2112.10752.pdf
+# https://github.com/AUTOMATIC1111/stable-diffusion-webui
+# https://github.com/CompVis/stable-diffusion
+# https://github.com/Stability-AI/stablediffusion
+```
+
+
+
 ![stable-diffusion](./pic/3/3-2/stable-diffusion.jpg "stable-diffusion")
 ```
 from diffusers import StableDiffusionPipeline
@@ -764,6 +951,51 @@ https://arxiv.org/pdf/2302.05543.pdf
 ##### 3.2.5 Dreambooth
     DreamBooth: Fine Tuning Text-to-Image Diffusion Models for Subject-Driven Generation
     https://arxiv.org/pdf/2208.12242.pdf
+
+
+#### 3.3 多模态模型
+##### 3.3.1 Blip
+```
+BLIP: Bootstrapping Language-Image Pre-training for Unified Vision-Language Understanding and Generation
+https://arxiv.org/pdf/2201.12086.pdf
+```
+![blip](./pic/3/3-3/blip.jpg "blip") 
+- ITC: Image-Text Contrastive Loss, align the feature space of the visual transformer and the text transformer by encouraging positive image-text pairs to have similar representations in contrast to the negative pairs
+- ITM: learn image-text multimodal representation that captures the fine-grained alignment between vision and language. a binary classification task.
+- LM: aims to generate textual descriptions given an image
+- CapFilt: a captioner to generate captions given web images, and a filter to remove noisy image-text pairs. the captioner is an image-grounded text decoder. The filter is an image-grounded text encoder.
+![blip](./pic/3/3-3/blip-1.jpg "blip")
+ 
+##### 3.3.2 Blip-2
+```
+BLIP-2: Bootstrapping Language-Image Pre-training with Frozen Image Encoders and Large Language Models
+https://arxiv.org/pdf/2301.12597.pdf
+```
+![blip](./pic/3/3-3/blip2-0.jpg "blip")
+![blip](./pic/3/3-3/blip2-1.jpg "blip")
+- representation learning stage：connect Q-Former to a frozen image encoder and perform pre-training using image-text pairs. ITC， ITM，LM.
+- generative pre-training stage: connect QFormer (with the frozen image encoder attached) to a frozen LLM to harvest the LLM’s generative language capability
+![blip](./pic/3/3-3/blip2-2.jpg "blip")
+
+##### 3.3.3 Mini-GPT4
+```
+MINIGPT-4: ENHANCING VISION-LANGUAGE UNDERSTANDING WITH ADVANCED LARGE LANGUAGE MODELS
+https://arxiv.org/pdf/2304.10592.pdf
+```
+![blip](./pic/3/3-3/mini-gpt4.jpg "blip")
+- pretraining:
+  500w image-text paris
+  
+- sccond-funetuning:
+  Initial aligned image-text generation:
+  ```
+  ###Human: <Img><ImageFeature></Img>Describe this image in detail. Give as many details as possible. Say everything you see. ###Assistant:
+  ```
+  Data post-processing: ChatGPT4
+  SECOND-STAGE FINETUNING:
+  ```
+  ###Human: <Img><ImageFeature></Img><Instruction>###Assistant:
+  ```
 
 ### 4 分布式训练
 #### 4.1 概述
