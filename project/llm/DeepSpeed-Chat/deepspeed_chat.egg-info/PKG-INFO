@@ -1,0 +1,5 @@
+Metadata-Version: 2.1
+Name: deepspeed-chat
+Version: 0.1
+Home-page: https://github.com/microsoft/DeepSpeedExamples/tree/master/applications/DeepSpeed-Chat
+Provides-Extra: azureml
