@@ -49,7 +49,7 @@ run:
   num_workers: 1
   warmup_steps: 5000
 
-  seed: 42
+  seed: 0
   output_dir: "output/BLIP2/Pretrain_stage1"
 
   amp: True

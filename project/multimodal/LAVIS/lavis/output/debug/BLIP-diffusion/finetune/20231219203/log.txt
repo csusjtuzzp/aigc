@@ -1,0 +1,89 @@
+{
+    "run": {
+        "runner": "runner_iter",
+        "max_iters": 40,
+        "iters_per_inner_epoch": 20,
+        "task": "text-to-image-generation",
+        "lr_sched": "constant_lr",
+        "init_lr": 5e-06,
+        "min_lr": 0,
+        "weight_decay": 0.01,
+        "batch_size_train": 3,
+        "batch_size_eval": 1,
+        "num_workers": 4,
+        "seed": 42,
+        "output_dir": "output/debug/BLIP-diffusion/finetune",
+        "amp": true,
+        "resume_ckpt_path": null,
+        "evaluate": false,
+        "train_splits": [
+            "train"
+        ],
+        "device": "cuda",
+        "world_size": 1,
+        "dist_url": "env://",
+        "distributed": true,
+        "rank": 0,
+        "gpu": 0,
+        "dist_backend": "nccl"
+    },
+    "model": {
+        "vit_model": "clip_L",
+        "qformer_num_query_token": 16,
+        "qformer_cross_attention_freq": 1,
+        "sd_train_text_encoder": false,
+        "sd_pretrained_model_name_or_path": "/mnt/f/aigc_data/model/stable-diffusion-v1-4/",
+        "load_finetuned": false,
+        "load_pretrained": true,
+        "pretrained": "/mnt/f/aigc_data/model/blip-diffusion/",
+        "arch": "blip_diffusion",
+        "model_type": "base",
+        "qformer_train": false,
+        "vae_half_precision": true
+    },
+    "preprocess": {
+        "vis_processor": {
+            "train": {
+                "name": "blip_diffusion_inp_image_eval"
+            },
+            "eval": {
+                "name": "blip_diffusion_inp_image_eval"
+            }
+        },
+        "text_processor": {
+            "train": {
+                "name": "blip_caption"
+            },
+            "eval": {
+                "name": "blip_caption"
+            }
+        }
+    },
+    "datasets": {
+        "blip_diffusion_finetune": {
+            "data_type": "images",
+            "build_info": {
+                "images": {
+                    "storage": "/mnt/f/aigc_data/data_set/dog/"
+                },
+                "subject_text": "dog"
+            },
+            "text_processor": {
+                "train": {
+                    "name": "blip_caption"
+                },
+                "eval": {
+                    "name": "blip_caption"
+                }
+            },
+            "kw_processor": {
+                "inp_vis_processor": {
+                    "name": "blip_diffusion_inp_image_train"
+                },
+                "tgt_vis_processor": {
+                    "name": "blip_diffusion_tgt_image_train"
+                }
+            }
+        }
+    }
+}

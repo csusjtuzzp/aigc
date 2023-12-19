@@ -11,8 +11,8 @@ model:
   freeze_vit: False
   
   # # finetune blip2 with clip-vit-large
-  # use_grad_checkpoint: False
-  # pretrained: "https://storage.googleapis.com/sfr-vision-language-research/LAVIS/models/BLIP2/blip2_pretrained_vitL.pth"
+  use_grad_checkpoint: True
+  pretrained: "/mnt/f/aigc_data/model/vit/blip2_pretrained.pth"
   # vit_model: clip_L  
 
 datasets:
@@ -29,9 +29,9 @@ datasets:
           name: "blip_caption"
         eval:
           name: "blip_caption"
-    build_info:
-        images:
-            storage: '/export/share/datasets/vision/coco/images/'
+    # build_info:
+    #    images:
+    #        storage: '/export/share/datasets/vision/coco/images/'
 
 run:
   task: retrieval

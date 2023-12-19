@@ -12,7 +12,8 @@ model:
   sd_train_text_encoder: False
 
   vae_half_precision: True
-  # load_finetuned: False
+  load_finetuned: False
+  pretrained: "/mnt/f/aigc_data/model/blip-diffusion/"
 
 datasets:
   blip_diffusion_finetune: # name of the dataset builder
@@ -31,7 +32,7 @@ datasets:
     build_info:
       subject_text: "dog"
       images:
-        storage: "/export/home/workspace/LAVIS-Diffusion/LAVIS/projects/blip-diffusion/images/dreambooth/dog8" 
+        storage: "/mnt/f/aigc_data/data_set/dog/" 
 
 run:
   runner: runner_iter

@@ -10,6 +10,7 @@ model:
   # intialize stage 2 pretraining from stage 1 pretrained model
   pretrained: "/mnt/f/aigc_data/model/vit/blip2_pretrained.pth"
   freeze_vit: True
+  use_grad_checkpoint: True
 
 
 datasets:
