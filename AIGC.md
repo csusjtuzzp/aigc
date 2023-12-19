@@ -1512,7 +1512,6 @@ agent_chain.run(input="whats the weather like in pomfret?")
     chat_history.append((question, result['answer']))
     print(result['answer'])
   ```
-#### 5.2 LangChain-ChatGLM
 
 ### 6 NLP 任务
 #### 6.1 意图识别
