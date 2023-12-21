@@ -1,3 +1,25 @@
+- [1. DDPM](#1-ddpm)
+  - [1.1 model core](#11-model-core)
+  - [1.2 code](#12-code)
+- [2. DDIM](#2-ddim)
+  - [2.1 model core](#21-model-core)
+  - [2.2 code](#22-code)
+  - [2.3 result:](#23-result)
+- [3. Controlnet](#3-controlnet)
+  - [3.1 model:](#31-model)
+  - [3.2 model code](#32-model-code)
+- [3. DreamBooth](#3-dreambooth)
+  - [3.1 model:](#31-model-1)
+- [4. Blip-Diffusion](#4-blip-diffusion)
+  - [4.1 model:](#41-model)
+- [4.2 model code:](#42-model-code)
+- [5. ImageReward](#5-imagereward)
+  - [5.1 model:](#51-model)
+  - [5.2 reward model](#52-reward-model)
+  - [5.2 refl](#52-refl)
+
+
+
 ### 1. DDPM
 #### 1.1 model core
 ![ddpm](../pic/text2image/ddpm.png "ddpm")
@@ -1011,7 +1033,7 @@
         return loss, loss_list, acc
     ```
 
-#### 5.2 refl:
+#### 5.2 refl
 - model:
     ```
     sd
